@@ -6,9 +6,11 @@ import { PullRequestRow } from './PullRequestRow.js'
 interface Props {
   status: PullRequestStatus
   pullRequests: PullRequestView[]
+  onChanged: () => void
+  onPreview: (draftId: string) => void
 }
 
-export function StatusGroup({ status, pullRequests }: Props): JSX.Element | null {
+export function StatusGroup({ status, pullRequests, onChanged, onPreview }: Props): JSX.Element | null {
   if (pullRequests.length === 0) return null
   return (
     <section className={`group group-${status}`}>
@@ -22,6 +24,8 @@ export function StatusGroup({ status, pullRequests }: Props): JSX.Element | null
           <PullRequestRow
             key={`${pullRequest.repo}#${pullRequest.number}`}
             pullRequest={pullRequest}
+            onChanged={onChanged}
+            onPreview={onPreview}
           />
         ))}
       </ul>

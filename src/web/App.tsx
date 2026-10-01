@@ -7,6 +7,7 @@ import { createQueryStore } from './queryStorage.js'
 import { StatusBar } from './components/StatusBar.js'
 import { StatusGroup } from './components/StatusGroup.js'
 import { QueryEditor } from './components/QueryEditor.js'
+import { ReviewPreview } from './components/ReviewPreview.js'
 
 export function App(): JSX.Element {
   const store = useMemo(() => createQueryStore(), [])
@@ -15,6 +16,7 @@ export function App(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [editingQuery, setEditingQuery] = useState(() => !isUsableQuery(store.read()))
+  const [previewDraftId, setPreviewDraftId] = useState<string | null>(null)
   const queryRef = useRef(query)
   queryRef.current = query
 
@@ -33,7 +35,7 @@ export function App(): JSX.Element {
   useEffect(() => {
     void load()
     // US3 replaces this interval with the SSE stream.
-    const timer = setInterval(() => void load(), 15_000)
+    const timer = setInterval(() => void load(), 5_000)
     return () => clearInterval(timer)
   }, [load])
 
@@ -158,8 +160,22 @@ export function App(): JSX.Element {
       )}
 
       {STATUS_ORDER.map((status) => (
-        <StatusGroup key={status} status={status} pullRequests={board.groups[status]} />
+        <StatusGroup
+          key={status}
+          status={status}
+          pullRequests={board.groups[status]}
+          onChanged={() => void load()}
+          onPreview={setPreviewDraftId}
+        />
       ))}
+
+      {previewDraftId && (
+        <ReviewPreview
+          draftId={previewDraftId}
+          onClose={() => setPreviewDraftId(null)}
+          onResolved={() => void load()}
+        />
+      )}
     </main>
   )
 }

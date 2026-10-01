@@ -68,6 +68,24 @@ export interface PostedReview {
   postedAs: string
 }
 
+/** A draft plus what the UI needs to decide whether posting is safe. */
+export interface DraftDetail extends ReviewDraft {
+  headShaIsCurrent: boolean
+  currentHeadSha: string | null
+  postedCommentUrl: string | null
+}
+
+export interface RunDetail extends ReviewRun {
+  draftId: string | null
+}
+
+export interface PostedResult {
+  commentUrl: string
+  commentId: number
+  postedAt: string
+  postedAs: string
+}
+
 /** One row on the board. Status is computed on read, never persisted. */
 export interface PullRequestView {
   repo: string

@@ -13,7 +13,7 @@ changed. This app keeps that board live instead.
 
 Runs entirely on your machine with your own credentials. Teammates clone it and use theirs.
 
-**Status**: the board ships (User Story 1). Review runs, preview/post, and background polling are
+**Status**: the board and the review loop ship (User Stories 1 and 2). Background polling is
 specified and next up. Built with [GitHub Spec Kit](https://github.com/github/spec-kit).
 
 ## Run it
@@ -43,14 +43,22 @@ reads your token from `GITHUB_TOKEN` or `gh auth token` and keeps it in memory o
   running, ready for human, error.
 - Your query, customizable and remembered by your browser. Switching it drops the old results
   immediately; a blank or placeholder query never touches the GitHub API.
+- **Request AI review / re-review** per PR. The run executes locally through your `claude` CLI
+  against the PR's diff — no clone needed. Bounded concurrency, one run per PR, cancellable, with
+  a timeout and captured output on failure.
+- **Preview, edit, post or discard.** Nothing reaches GitHub until you click Post; the comment
+  goes up under your own account. Posting twice is refused, and a review describing an older
+  commit asks before it goes out.
+- Already reviewed at this commit? The request is refused with the commit shown, not silently
+  re-run. **Re-run** forces it.
 - Status computed from GitHub facts on every read, so it cannot drift.
 - Per-repo access failures reported without taking the board down; API quota and last-refresh
   time in the status bar.
 
 ### Not yet
 
-Review/re-review buttons, preview and post, and background polling — see
-[tasks.md](specs/001-pr-review-radar/tasks.md) phases 4 onward.
+Background polling and live updates (the board currently refreshes on a timer while open), and
+bulk actions — see [tasks.md](specs/001-pr-review-radar/tasks.md) phases 5 onward.
 
 ## Specification
 

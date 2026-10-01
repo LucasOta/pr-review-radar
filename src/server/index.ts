@@ -7,6 +7,10 @@ import { registerStatic } from './http/static.js'
 import { formatPreflightError, preflight, PreflightError } from './preflight.js'
 import { openDatabase } from './store/db.js'
 import { Repositories } from './store/repos.js'
+import { DiffFetcher } from './github/diff.js'
+import { ReviewQueue } from './review/queue.js'
+import { DraftService } from './review/drafts.js'
+import { ReviewPoster } from './github/post.js'
 
 const HOST = '127.0.0.1'
 
@@ -18,6 +22,9 @@ async function main(): Promise<void> {
   const repos = new Repositories(db)
   const clients = createClients(checks.token)
   const board = new BoardService(repos, clients, config)
+  const diffs = new DiffFetcher(clients.rest, () => config.get().maxDiffBytes)
+  const drafts = new DraftService(repos)
+  const poster = new ReviewPoster(clients.rest, repos, () => clients.identity())
 
   const app = Fastify({
     logger: { level: process.env.LOG_LEVEL ?? 'info', transport: undefined },
@@ -43,7 +50,13 @@ async function main(): Promise<void> {
     return refreshing
   }
 
-  registerRoutes(app, { board, config, refreshNow })
+  const queue = new ReviewQueue(repos, diffs, () => config.get(), {
+    onRunUpdated: (run) => app.log.info({ runId: run.id, status: run.status }, 'run updated'),
+    onDraftReady: (draft) =>
+      app.log.info({ draftId: draft.id, repo: draft.repo, number: draft.number }, 'draft ready'),
+  })
+
+  registerRoutes(app, { board, config, repos, queue, drafts, poster, refreshNow })
   await registerStatic(app)
 
   const { port } = config.get()
