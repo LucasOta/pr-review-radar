@@ -125,9 +125,14 @@ events are a transport concern, and persisting them would invite treating them a
 |---|---|
 | `running` | A run for this pull request is `queued` or `running` |
 | `error` | The most recent run for the current head SHA is `failed` and nothing newer succeeded |
+| `ready_for_human` | Current head SHA carries an AI review and no `CHANGES_REQUESTED` review was submitted at or after that commit (FR-008) |
 | `awaiting_rereview` | A `CHANGES_REQUESTED` review exists **and** ≥1 commit is dated after its `submittedAt` (FR-007) |
-| `ready_for_human` | Current head SHA has a posted review and no `CHANGES_REQUESTED` review covers it (FR-008) |
 | `needs_review` | Anything else, including a new head SHA with no review covering it |
+
+`ready_for_human` is evaluated before `awaiting_rereview` so a pull request that *was* re-reviewed
+at its new head leaves the awaiting group instead of sticking there permanently. "Carries an AI
+review" means a local `posted_reviews` row for that SHA, or a marker recovered from the pull
+request's comments — which is what makes the classification survive a deleted database (FR-043).
 
 Precedence is top to bottom; the first match wins, which guarantees FR-006's "exactly one status".
 `staleness.ts` separately returns the count of commits after the changes-requested review for

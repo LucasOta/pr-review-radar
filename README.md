@@ -13,8 +13,40 @@ changed. This app keeps that board live instead.
 
 Runs entirely on your machine with your own credentials. Teammates clone it and use theirs.
 
-**Status**: specification complete, implementation pending. Built with
-[GitHub Spec Kit](https://github.com/github/spec-kit).
+**Status**: the board ships (User Story 1). Review runs, preview/post, and background polling are
+specified and next up. Built with [GitHub Spec Kit](https://github.com/github/spec-kit).
+
+## Run it
+
+Needs Node >= 24, an authenticated [`gh`](https://cli.github.com), and the
+[Claude Code CLI](https://claude.com/claude-code) on PATH.
+
+```bash
+npm install
+npm run build
+npm start            # http://127.0.0.1:4317
+```
+
+For development, `npm run dev` runs the server with reload plus Vite on
+http://127.0.0.1:5317. `npm run doctor` reports what the app can see without starting it.
+
+Set your GitHub search query in the UI — the same syntax as GitHub search, e.g.
+`org:YOUR_ORG is:pr is:open label:YOUR_LABEL`. It is stored in `config/config.json`, which is
+gitignored, along with the local cache in `data/`. The app reads your token from `GITHUB_TOKEN` or
+`gh auth token` and keeps it in memory only.
+
+### What works today
+
+- Live board of every open PR matching your query, grouped: needs AI review, awaiting re-review,
+  running, ready for human, error.
+- Status computed from GitHub facts on every read, so it cannot drift.
+- Per-repo access failures reported without taking the board down; API quota and last-refresh
+  time in the status bar.
+
+### Not yet
+
+Review/re-review buttons, preview and post, and background polling — see
+[tasks.md](specs/001-pr-review-radar/tasks.md) phases 4 onward.
 
 ## Specification
 

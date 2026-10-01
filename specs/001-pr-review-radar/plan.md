@@ -90,6 +90,10 @@ src/
 │   └── events.ts             # SSE event payload types
 ├── server/
 │   ├── index.ts              # Entry: preflight, wire, listen on 127.0.0.1
+│   ├── doctor.ts             # `npm run doctor` environment report
+│   ├── paths.ts              # Root/config/data path resolution (src and dist)
+│   ├── board/
+│   │   └── service.ts        # Cache refresh + board composition (US3 wraps this)
 │   ├── config/
 │   │   ├── schema.ts         # Zod config schema + defaults
 │   │   └── store.ts          # Load/save config/config.json (gitignored)
@@ -102,7 +106,8 @@ src/
 │   │   └── post.ts           # ONLY module that writes to GitHub
 │   ├── domain/
 │   │   ├── status.ts         # Pure classifier (needs/running/awaiting/ready/error)
-│   │   └── staleness.ts      # Commits-since-changes-requested computation
+│   │   ├── staleness.ts      # Commits-since-changes-requested computation
+│   │   └── view.ts           # Snapshot + runs + posts -> PullRequestView, grouped
 │   ├── events/
 │   │   ├── ChangeSource.ts   # Interface + event type
 │   │   ├── PollingSource.ts  # Interval poller (first implementation)

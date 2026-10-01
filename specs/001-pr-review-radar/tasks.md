@@ -26,13 +26,13 @@ Single project at repository root: `src/server/`, `src/web/`, `src/shared/`, `te
 
 **Purpose**: A runnable skeleton with the toolchain in place.
 
-- [ ] T001 Initialize `package.json` (ESM, `"engines": { "node": ">=24" }`) with scripts `dev`, `build`, `start`, `test`, `lint`; add dependencies fastify, @octokit/graphql, @octokit/rest, @octokit/plugin-throttling, zod, react, react-dom; dev dependencies typescript, tsx, vite, @vitejs/plugin-react, vitest, eslint, prettier
-- [ ] T002 [P] Add `tsconfig.json` (strict, `moduleResolution: "bundler"`, paths for `@shared/*`) and `tsconfig.server.json` for the server build
-- [ ] T003 [P] Add `vite.config.ts` building `src/web` into `dist/web` with a dev proxy for `/api`
-- [ ] T004 [P] Add ESLint + Prettier config and `.editorconfig`
-- [ ] T005 [P] Add `vitest.config.ts` with `tests/unit` and `tests/integration` projects
-- [ ] T006 Extend `.gitignore` with `config/`, `data/`, `dist/` and verify `git status` is clean after a local run
-- [ ] T007 [P] Create `src/shared/types.ts` and `src/shared/events.ts` from contracts/http-api.md (PullRequestView, ReviewRun, ReviewDraft, Status, SSE payloads)
+- [x] T001 Initialize `package.json` (ESM, `"engines": { "node": ">=24" }`) with scripts `dev`, `build`, `start`, `test`, `lint`; add dependencies fastify, @octokit/graphql, @octokit/rest, @octokit/plugin-throttling, zod, react, react-dom; dev dependencies typescript, tsx, vite, @vitejs/plugin-react, vitest, eslint, prettier
+- [x] T002 [P] Add `tsconfig.json` (strict, `moduleResolution: "bundler"`, paths for `@shared/*`) and `tsconfig.server.json` for the server build
+- [x] T003 [P] Add `vite.config.ts` building `src/web` into `dist/web` with a dev proxy for `/api`
+- [x] T004 [P] Add ESLint + Prettier config and `.editorconfig`
+- [x] T005 [P] Add `vitest.config.ts` with `tests/unit` and `tests/integration` projects
+- [x] T006 Extend `.gitignore` with `config/`, `data/`, `dist/` and verify `git status` is clean after a local run
+- [x] T007 [P] Create `src/shared/types.ts` and `src/shared/events.ts` from contracts/http-api.md (PullRequestView, ReviewRun, ReviewDraft, Status, SSE payloads)
 
 ---
 
@@ -40,16 +40,16 @@ Single project at repository root: `src/server/`, `src/web/`, `src/shared/`, `te
 
 **Purpose**: Everything every story needs. **No story work starts until this phase is done.**
 
-- [ ] T008 Implement `src/server/config/schema.ts` — Zod schema and defaults for OperatorConfig per data-model.md
-- [ ] T009 Implement `src/server/config/store.ts` — load/create/save `config/config.json`, never containing a token
-- [ ] T010 Implement `src/server/store/schema.sql` — tables `pull_request_snapshots`, `review_runs`, `review_drafts`, `posted_reviews` with the indexes and the unique constraint on `posted_reviews.draft_id`
-- [ ] T011 Implement `src/server/store/db.ts` — open `data/radar.sqlite` via `node:sqlite`, run migrations idempotently, create `data/` if absent
-- [ ] T012 Implement `src/server/store/repos.ts` — typed accessors for snapshots, runs, drafts, posts; the only module touching SQL
-- [ ] T013 Implement `src/server/preflight.ts` — verify Node >= 24, `gh` authenticated, `claude` present; resolve token from `GITHUB_TOKEN` or `gh auth token`; exit with a named, actionable message per missing tool (FR-044)
-- [ ] T014 Implement `src/server/github/client.ts` — Octokit GraphQL + REST factories with `@octokit/plugin-throttling`, in-memory token, `viewer { login }` lookup, rate-limit accessor (FR-003, FR-004, FR-040)
-- [ ] T015 Implement `src/server/http/static.ts` and `src/server/index.ts` — Fastify bound to `127.0.0.1` on the configured port, serving `dist/web`, wiring preflight and shutdown (FR-045)
-- [ ] T016 [P] Add `tests/fixtures/` with recorded GraphQL search payloads covering each status case
-- [ ] T017 [P] Write `tests/unit/config.test.ts` — schema defaults, rejection of invalid config, token never serialized
+- [x] T008 Implement `src/server/config/schema.ts` — Zod schema and defaults for OperatorConfig per data-model.md
+- [x] T009 Implement `src/server/config/store.ts` — load/create/save `config/config.json`, never containing a token
+- [x] T010 Implement `src/server/store/schema.sql` — tables `pull_request_snapshots`, `review_runs`, `review_drafts`, `posted_reviews` with the indexes and the unique constraint on `posted_reviews.draft_id`
+- [x] T011 Implement `src/server/store/db.ts` — open `data/radar.sqlite` via `node:sqlite`, run migrations idempotently, create `data/` if absent
+- [x] T012 Implement `src/server/store/repos.ts` — typed accessors for snapshots, runs, drafts, posts; the only module touching SQL
+- [x] T013 Implement `src/server/preflight.ts` — verify Node >= 24, `gh` authenticated, `claude` present; resolve token from `GITHUB_TOKEN` or `gh auth token`; exit with a named, actionable message per missing tool (FR-044)
+- [x] T014 Implement `src/server/github/client.ts` — Octokit GraphQL + REST factories with `@octokit/plugin-throttling`, in-memory token, `viewer { login }` lookup, rate-limit accessor (FR-003, FR-004, FR-040)
+- [x] T015 Implement `src/server/http/static.ts` and `src/server/index.ts` — Fastify bound to `127.0.0.1` on the configured port, serving `dist/web`, wiring preflight and shutdown (FR-045)
+- [x] T016 [P] Add `tests/fixtures/` with recorded GraphQL search payloads covering each status case
+- [x] T017 [P] Write `tests/unit/config.test.ts` — schema defaults, rejection of invalid config, token never serialized
 
 **Checkpoint**: `npm run dev` starts, refuses clearly when a prerequisite is missing, and serves an empty shell.
 
@@ -61,19 +61,19 @@ Single project at repository root: `src/server/`, `src/web/`, `src/shared/`, `te
 
 **Independent test**: Set a query, open the app, confirm every matching pull request appears in the right group.
 
-- [ ] T018 [US1] Write `src/server/github/queries.ts` — GraphQL `search` document returning number, title, author, isDraft, updatedAt, headRefOid, reviews(last:30), recent commits, comments for marker detection, plus `rateLimit`
-- [ ] T019 [US1] Implement `src/server/github/fetchBoard.ts` — paginate the search, map nodes to snapshot rows, surface per-repository access failures as `repoErrors` rather than throwing (FR-042)
-- [ ] T020 [US1] Implement `src/server/domain/status.ts` — pure classifier with the precedence table from data-model.md (FR-006, FR-007, FR-008)
-- [ ] T021 [US1] Implement `src/server/domain/staleness.ts` — count commits dated after the changes-requested review (FR-009)
-- [ ] T022 [US1] Implement `GET /api/board` in `src/server/http/routes.ts` — compose snapshots + runs + drafts + posts into `PullRequestView` groups with operator, query, rate limit, lastRefreshAt, stale flag
-- [ ] T023 [P] [US1] Implement `GET /api/config` and `PUT /api/config` routes with Zod validation and 400 field errors
-- [ ] T024 [US1] Build `src/web/main.tsx`, `src/web/App.tsx`, `src/web/api.ts` — fetch and render the board
-- [ ] T025 [P] [US1] Build `src/web/components/StatusGroup.tsx` and `PullRequestRow.tsx` — group counts, repo/number/title/author/age/head SHA/last review time, draft badge, link to GitHub (FR-005, FR-010, FR-011)
-- [ ] T026 [P] [US1] Build `src/web/components/StatusBar.tsx` — operator login, rate limit, last refresh, stale indicator
-- [ ] T027 [P] [US1] Build the empty state offering to edit the query, and a query editor bound to `PUT /api/config`
-- [ ] T028 [US1] Write `tests/unit/status.test.ts` — every status path, with the FR-007 negative case: new commits without a changes-requested review MUST NOT yield `awaiting_rereview` **(constitution-required)**
-- [ ] T029 [P] [US1] Write `tests/unit/staleness.test.ts` — commit counting boundaries, including commits exactly at the review timestamp
-- [ ] T030 [P] [US1] Write `tests/integration/board.test.ts` — fixtures in, grouped board out, including the partial-access case
+- [x] T018 [US1] Write `src/server/github/queries.ts` — GraphQL `search` document returning number, title, author, isDraft, updatedAt, headRefOid, reviews(last:30), recent commits, comments for marker detection, plus `rateLimit`
+- [x] T019 [US1] Implement `src/server/github/fetchBoard.ts` — paginate the search, map nodes to snapshot rows, surface per-repository access failures as `repoErrors` rather than throwing (FR-042)
+- [x] T020 [US1] Implement `src/server/domain/status.ts` — pure classifier with the precedence table from data-model.md (FR-006, FR-007, FR-008)
+- [x] T021 [US1] Implement `src/server/domain/staleness.ts` — count commits dated after the changes-requested review (FR-009)
+- [x] T022 [US1] Implement `GET /api/board` in `src/server/http/routes.ts` — compose snapshots + runs + drafts + posts into `PullRequestView` groups with operator, query, rate limit, lastRefreshAt, stale flag
+- [x] T023 [P] [US1] Implement `GET /api/config` and `PUT /api/config` routes with Zod validation and 400 field errors
+- [x] T024 [US1] Build `src/web/main.tsx`, `src/web/App.tsx`, `src/web/api.ts` — fetch and render the board
+- [x] T025 [P] [US1] Build `src/web/components/StatusGroup.tsx` and `PullRequestRow.tsx` — group counts, repo/number/title/author/age/head SHA/last review time, draft badge, link to GitHub (FR-005, FR-010, FR-011)
+- [x] T026 [P] [US1] Build `src/web/components/StatusBar.tsx` — operator login, rate limit, last refresh, stale indicator
+- [x] T027 [P] [US1] Build the empty state offering to edit the query, and a query editor bound to `PUT /api/config`
+- [x] T028 [US1] Write `tests/unit/status.test.ts` — every status path, with the FR-007 negative case: new commits without a changes-requested review MUST NOT yield `awaiting_rereview` **(constitution-required)**
+- [x] T029 [P] [US1] Write `tests/unit/staleness.test.ts` — commit counting boundaries, including commits exactly at the review timestamp
+- [x] T030 [P] [US1] Write `tests/integration/board.test.ts` — fixtures in, grouped board out, including the partial-access case
 
 **Checkpoint**: US1 is independently shippable — the board replaces the manual summary prompt.
 
@@ -115,7 +115,7 @@ Single project at repository root: `src/server/`, `src/web/`, `src/shared/`, `te
 - [ ] T047 [US3] Implement `src/server/events/PollingSource.ts` — interval cycle, snapshot diffing, emit only on changed `updatedAt`/`headSha`, emit removals for disappeared pull requests, `refreshNow()`, `status()` with lastSuccessAt/lastError (FR-032, FR-033, FR-041)
 - [ ] T048 [US3] Implement `src/server/http/sse.ts` — `GET /api/events` with `pr.updated`, `pr.removed`, `run.updated`, `draft.ready`, `draft.resolved`, `refresh.completed`, `error`, plus a 15s heartbeat
 - [ ] T049 [US3] Emit run and draft lifecycle events from the queue and draft services into the SSE hub
-- [ ] T050 [US3] Implement `POST /api/refresh` delegating to `refreshNow()` (FR-037)
+- [x] T050 [US3] Implement `POST /api/refresh` delegating to `refreshNow()` (FR-037) — landed early because US1 needs a way to populate the cache; US3 repoints it at `PollingSource.refreshNow()`
 - [ ] T051 [US3] Build `src/web/useEventStream.ts` — subscribe, apply updates in place, resynchronize via `GET /api/board` on reconnect (FR-035)
 - [ ] T052 [P] [US3] Wire staleness and last-refresh display plus a manual Refresh button into `StatusBar.tsx` (FR-038)
 - [ ] T053 [US3] Write `tests/unit/bus.test.ts` — the same event twice yields one re-evaluation and no duplicate run **(constitution-required)**

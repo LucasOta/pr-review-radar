@@ -1,0 +1,267 @@
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --border: #dfe3ea;
+  --text: #1b1f24;
+  --muted: #646d78;
+  --accent: #2f6feb;
+  --warn: #b5801a;
+  --error: #c3362b;
+  --needs: #2f6feb;
+  --awaiting: #b5801a;
+  --running: #7a52cc;
+  --ready: #1f8a4c;
+  --errored: #c3362b;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1317;
+    --surface: #171c22;
+    --border: #272e36;
+    --text: #e6edf3;
+    --muted: #94a1ae;
+    --accent: #5b94f0;
+    --needs: #5b94f0;
+    --awaiting: #d6a03c;
+    --running: #a382e8;
+    --ready: #3fb972;
+    --errored: #e5584a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-size: 18px;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.statusbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.statusbar .operator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+
+.statusbar img {
+  border-radius: 50%;
+}
+
+button {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--muted);
+}
+
+button.secondary {
+  color: var(--muted);
+}
+
+.group {
+  margin-bottom: 24px;
+}
+
+.group h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.count {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 7px;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-needs_review { background: var(--needs); }
+.dot-awaiting_rereview { background: var(--awaiting); }
+.dot-running { background: var(--running); }
+.dot-ready_for_human { background: var(--ready); }
+.dot-error { background: var(--errored); }
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.row {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.row-title {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.row-title:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.row-meta a {
+  color: var(--muted);
+}
+
+.repo {
+  font-variant-numeric: tabular-nums;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.tag-draft { color: var(--muted); }
+.tag-stale { color: var(--awaiting); border-color: var(--awaiting); }
+
+.banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.banner-warn {
+  border-color: var(--warn);
+}
+
+.banner label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.banner input {
+  width: 100%;
+  font: inherit;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.banner .actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--muted);
+}
+
+.muted { color: var(--muted); }
+.warn { color: var(--warn); }
+.error { color: var(--error); }
