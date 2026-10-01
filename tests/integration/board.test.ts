@@ -12,11 +12,16 @@ import type { RateLimitInfo } from '../../src/shared/types.js'
 import { buildMarker } from '../../src/server/github/queries.js'
 import { searchPayload } from '../fixtures/github.js'
 
-function tempConfig(query: string): ConfigStore {
+function tempConfig(): ConfigStore {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'radar-board-'))
-  const store = new ConfigStore(path.join(dir, 'config.json'))
-  store.update({ searchQuery: query })
-  return store
+  return new ConfigStore(path.join(dir, 'config.json'))
+}
+
+/** The browser owns the query and hands it to the service, exactly as the UI does. */
+function serviceWith(repos: Repositories, clients: GitHubClients, query: string | null) {
+  const service = new BoardService(repos, clients, tempConfig())
+  service.setQuery(query)
+  return service
 }
 
 function fakeClients(responses: unknown[]): GitHubClients & { calls: number } {
@@ -109,11 +114,12 @@ describe('BoardService', () => {
         },
       ]),
     ])
-    const service = new BoardService(repos, clients, tempConfig('org:acme is:pr is:open'))
+    const service = serviceWith(repos, clients, 'org:acme is:pr is:open')
 
     await service.refresh()
     const board = await service.board()
 
+    expect(board.query).toBe('org:acme is:pr is:open')
     expect(board.groups.needs_review.map((pr) => pr.number)).toEqual([1])
     expect(board.groups.awaiting_rereview.map((pr) => pr.number)).toEqual([2])
     expect(board.groups.ready_for_human.map((pr) => pr.number)).toEqual([3])
@@ -124,7 +130,7 @@ describe('BoardService', () => {
   it('reports only genuinely changed pull requests on a second cycle (Constitution V)', async () => {
     const unchanged = searchPayload([{ number: 1, headSha: 'aaa1111', updatedAt: '2026-09-02T10:00:00Z' }])
     const clients = fakeClients([unchanged, unchanged])
-    const service = new BoardService(repos, clients, tempConfig('org:acme is:pr is:open'))
+    const service = serviceWith(repos, clients, 'org:acme is:pr is:open')
 
     const first = await service.refresh()
     const second = await service.refresh()
@@ -138,7 +144,7 @@ describe('BoardService', () => {
       searchPayload([{ number: 1, headSha: 'aaa1111', updatedAt: '2026-09-02T10:00:00Z' }]),
       searchPayload([{ number: 1, headSha: 'bbb2222', updatedAt: '2026-09-02T11:00:00Z' }]),
     ])
-    const service = new BoardService(repos, clients, tempConfig('org:acme is:pr is:open'))
+    const service = serviceWith(repos, clients, 'org:acme is:pr is:open')
 
     await service.refresh()
     const second = await service.refresh()
@@ -153,7 +159,7 @@ describe('BoardService', () => {
       searchPayload([{ number: 1 }, { number: 2 }]),
       searchPayload([{ number: 1 }]),
     ])
-    const service = new BoardService(repos, clients, tempConfig('org:acme is:pr is:open'))
+    const service = serviceWith(repos, clients, 'org:acme is:pr is:open')
 
     await service.refresh()
     const second = await service.refresh()
@@ -165,7 +171,7 @@ describe('BoardService', () => {
 
   it('keeps serving the last board when GitHub fails, and marks it stale', async () => {
     const clients = fakeClients([searchPayload([{ number: 1 }]), new Error('ETIMEDOUT')])
-    const service = new BoardService(repos, clients, tempConfig('org:acme is:pr is:open'))
+    const service = serviceWith(repos, clients, 'org:acme is:pr is:open')
 
     await service.refresh()
     await expect(service.refresh()).rejects.toThrow('ETIMEDOUT')
@@ -176,15 +182,82 @@ describe('BoardService', () => {
     expect(service.lastRefreshError).toContain('ETIMEDOUT')
   })
 
-  it('does not call GitHub while the query is still the placeholder', async () => {
+  it('does not call GitHub until the browser supplies a query', async () => {
     const clients = fakeClients([searchPayload([{ number: 1 }])])
-    const store = tempConfig('org:acme is:pr')
-    store.update({ searchQuery: 'org:YOUR_ORG is:pr is:open label:YOUR_LABEL' })
-    const service = new BoardService(repos, clients, store)
+    const service = serviceWith(repos, clients, null)
 
     const outcome = await service.refresh()
+    const board = await service.board()
 
     expect(outcome.changed).toHaveLength(0)
     expect(clients.calls).toBe(0)
+    expect(board.query).toBeNull()
+    expect(board.stale).toBe(false)
+  })
+
+  it('does not call GitHub for a query still carrying the example placeholders', async () => {
+    const clients = fakeClients([searchPayload([{ number: 1 }])])
+    const service = serviceWith(repos, clients, 'org:YOUR_ORG is:pr is:open label:YOUR_LABEL')
+
+    await service.refresh()
+
+    expect(clients.calls).toBe(0)
+  })
+
+  it('drops the cache when the operator switches queries', async () => {
+    const clients = fakeClients([
+      searchPayload([{ number: 1 }, { number: 2 }]),
+      searchPayload([{ number: 9 }]),
+    ])
+    const service = serviceWith(repos, clients, 'org:acme is:pr is:open label:squad-a')
+
+    await service.refresh()
+    expect((await service.board()).groups.needs_review).toHaveLength(2)
+
+    const changed = service.setQuery('org:acme is:pr is:open label:squad-b')
+    expect(changed).toBe(true)
+
+    // The old query's pull requests are gone before the new query has even answered.
+    const between = await service.board()
+    expect(between.groups.needs_review).toHaveLength(0)
+    expect(between.lastRefreshAt).toBeNull()
+
+    await service.refresh()
+    expect((await service.board()).groups.needs_review.map((pr) => pr.number)).toEqual([9])
+  })
+
+  it('treats re-setting the same query as a no-op', async () => {
+    const clients = fakeClients([searchPayload([{ number: 1 }])])
+    const service = serviceWith(repos, clients, 'org:acme is:pr is:open')
+
+    await service.refresh()
+    expect(service.setQuery('org:acme is:pr is:open')).toBe(false)
+    expect(service.setQuery('  org:acme is:pr is:open  ')).toBe(false)
+    expect((await service.board()).groups.needs_review).toHaveLength(1)
+  })
+
+  it('keeps app-owned rows when the cache is dropped', async () => {
+    const clients = fakeClients([searchPayload([{ number: 1 }]), searchPayload([{ number: 1 }])])
+    const service = serviceWith(repos, clients, 'org:acme is:pr is:open')
+    await service.refresh()
+
+    repos.insertRun({
+      id: 'run_keep',
+      repo: 'acme/widgets',
+      number: 1,
+      headSha: 'aaa1111',
+      kind: 'review',
+      status: 'succeeded',
+      forced: false,
+      createdAt: '2026-09-02T10:00:00Z',
+      startedAt: '2026-09-02T10:00:00Z',
+      finishedAt: '2026-09-02T10:02:00Z',
+      exitCode: 0,
+      stderrTail: null,
+      error: null,
+    })
+
+    service.setQuery('org:acme is:pr is:open label:other')
+    expect(repos.listRunsFor('acme/widgets', 1)).toHaveLength(1)
   })
 })

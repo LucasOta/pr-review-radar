@@ -1,24 +1,28 @@
 import type { JSX } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BoardResponse } from '@shared/types.js'
-import { STATUS_ORDER, isPlaceholderQuery } from '@shared/types.js'
+import { STATUS_ORDER, isUsableQuery } from '@shared/types.js'
 import { api } from './api.js'
+import { createQueryStore } from './queryStorage.js'
 import { StatusBar } from './components/StatusBar.js'
 import { StatusGroup } from './components/StatusGroup.js'
 import { QueryEditor } from './components/QueryEditor.js'
 
 export function App(): JSX.Element {
+  const store = useMemo(() => createQueryStore(), [])
+  const [query, setQuery] = useState<string | null>(() => store.read())
   const [board, setBoard] = useState<BoardResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [editingQuery, setEditingQuery] = useState(false)
+  const [editingQuery, setEditingQuery] = useState(() => !isUsableQuery(store.read()))
+  const queryRef = useRef(query)
+  queryRef.current = query
 
   const load = useCallback(async () => {
     try {
-      const next = await api.board()
+      const next = await api.board(queryRef.current)
       setBoard(next)
       setError(null)
-      if (isPlaceholderQuery(next.query)) setEditingQuery(true)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
     } finally {
@@ -33,50 +37,90 @@ export function App(): JSX.Element {
     return () => clearInterval(timer)
   }, [load])
 
+  // Another tab changed the query: adopt it rather than fighting over the board.
+  useEffect(() => {
+    const onStorage = (): void => {
+      const stored = store.read()
+      setQuery(stored)
+      queryRef.current = stored
+      void load()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [store, load])
+
   const refresh = useCallback(async () => {
-    await api.refresh()
+    if (!isUsableQuery(queryRef.current)) {
+      setEditingQuery(true)
+      return
+    }
+    await api.refresh(queryRef.current)
     setTimeout(() => void load(), 1500)
   }, [load])
 
   const saveQuery = useCallback(
-    async (searchQuery: string) => {
-      await api.updateConfig({ searchQuery })
+    async (next: string) => {
+      store.write(next)
+      setQuery(next)
+      queryRef.current = next
       setEditingQuery(false)
-      setTimeout(() => void load(), 1500)
+      setBoard(null)
+      setLoading(true)
+      await load()
+      setTimeout(() => void load(), 2500)
     },
-    [load],
+    [store, load],
   )
 
-  if (loading) {
-    return <main className="shell">
-      <p className="muted">Loading board…</p>
-    </main>
+  if (loading && !board) {
+    return (
+      <main className="shell">
+        <p className="muted">Loading board…</p>
+      </main>
+    )
   }
 
   if (error && !board) {
-    return <main className="shell">
-      <h1>PR Review Radar</h1>
-      <p className="error">Could not reach the local server: {error}</p>
-    </main>
+    return (
+      <main className="shell">
+        <h1>PR Review Radar</h1>
+        <p className="error">Could not reach the local server: {error}</p>
+      </main>
+    )
   }
 
   if (!board) return <main className="shell" />
 
   const total = STATUS_ORDER.reduce((sum, status) => sum + board.groups[status].length, 0)
-  const placeholder = isPlaceholderQuery(board.query)
+  const hasQuery = isUsableQuery(query)
 
   return (
     <main className="shell">
       <header className="header">
         <h1>PR Review Radar</h1>
-        <StatusBar board={board} onRefresh={refresh} onEditQuery={() => setEditingQuery(true)} />
+        <StatusBar
+          board={board}
+          query={query}
+          onRefresh={refresh}
+          onEditQuery={() => setEditingQuery(true)}
+        />
       </header>
 
       {editingQuery && (
         <QueryEditor
-          initial={placeholder ? '' : board.query}
+          initial={query ?? ''}
           onSave={saveQuery}
-          onCancel={placeholder ? undefined : () => setEditingQuery(false)}
+          onClear={
+            hasQuery
+              ? () => {
+                  store.clear()
+                  setQuery(null)
+                  queryRef.current = null
+                  void load()
+                }
+              : undefined
+          }
+          onCancel={hasQuery ? () => setEditingQuery(false) : undefined}
         />
       )}
 
@@ -93,10 +137,19 @@ export function App(): JSX.Element {
         </section>
       )}
 
-      {total === 0 && !placeholder && (
+      {!hasQuery && !editingQuery && (
+        <section className="empty">
+          <p>No search query set yet.</p>
+          <button type="button" onClick={() => setEditingQuery(true)}>
+            Set query
+          </button>
+        </section>
+      )}
+
+      {hasQuery && total === 0 && (
         <section className="empty">
           <p>
-            No open pull requests match <code>{board.query}</code>.
+            No open pull requests match <code>{query}</code>.
           </p>
           <button type="button" onClick={() => setEditingQuery(true)}>
             Edit query

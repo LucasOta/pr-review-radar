@@ -40,6 +40,12 @@ input.
    request changes, **When** the board loads, **Then** it is grouped as ready for human review.
 5. **Given** the search query returns no results, **When** the board loads, **Then** an empty
    state explains that the query matched nothing and offers to edit the query.
+6. **Given** no query has ever been set in this browser, **When** the app opens, **Then** it asks
+   for one and calls GitHub only after a usable query is saved.
+7. **Given** a query saved in a previous session, **When** the app opens again, **Then** that
+   query is restored from the browser and the board loads without retyping it.
+8. **Given** the operator replaces the query, **When** the board reloads, **Then** no pull request
+   from the previous query remains visible.
 
 ---
 
@@ -150,7 +156,8 @@ complete a review end to end without touching any file committed to the reposito
 2. **Given** a machine missing a required tool, **When** the app starts, **Then** it names the
    missing tool and how to install it, rather than failing obscurely.
 3. **Given** a teammate has configured the app, **When** they inspect the repository working tree,
-   **Then** no credential or personal configuration is staged for commit.
+   **Then** no credential or personal configuration is staged for commit, and no file on disk
+   contains their search query.
 4. **Given** a teammate posts an AI review, **When** it appears on GitHub, **Then** it is authored
    by that teammate's own account.
 
@@ -169,6 +176,12 @@ complete a review end to end without touching any file committed to the reposito
   configured rather than hanging or silently truncating without saying so.
 - A pull request is a draft: it is shown and labeled as draft, and group actions skip it by
   default.
+- Browser storage is unavailable (private mode, blocked, full): the app still works for the
+  session, says the query will not persist, and does not crash.
+- The operator changes the query in a second tab: the open board adopts the new query rather than
+  the two tabs overwriting each other's results.
+- The operator clears their browser data: the query is gone and the app asks for one again; no
+  board is shown from the old query.
 - The same pull request changes twice inside one refresh interval: it is re-evaluated once, not
   twice, and never produces duplicate runs or duplicate posted comments.
 - The local database is deleted: the board rebuilds from GitHub on next start, losing only stored
@@ -186,9 +199,17 @@ complete a review end to end without touching any file committed to the reposito
 **Discovery and configuration**
 
 - **FR-001**: The system MUST discover pull requests using a user-supplied GitHub search query,
-  editable from the UI, with a documented default template based on an organization and a label.
-- **FR-002**: The system MUST store configuration locally per operator and MUST NOT include any
-  operator configuration or credential in version control.
+  editable from the UI, with a documented example based on an organization and a label. The
+  example MUST never be used as a real query.
+- **FR-002**: The system MUST keep the search query in the operator's browser (local storage).
+  The server MUST NOT write the query to disk, and no operator configuration or credential may
+  enter version control.
+- **FR-002a**: The browser MUST send its query with each board read and refresh request; the
+  server holds it only for the life of the process so background refresh has a target.
+- **FR-002b**: Changing the query MUST discard cached pull requests belonging to the previous
+  query before showing a board, so the operator never sees results from a query they left.
+- **FR-002c**: The system MUST NOT call GitHub when no usable query is set, including when the
+  stored value is blank or still carries the example's placeholders.
 - **FR-003**: The system MUST authenticate to GitHub using the operator's own existing
   credentials and MUST NOT ask the operator to paste a token into the UI.
 - **FR-004**: The system MUST show the operator which GitHub account it is acting as.
@@ -294,8 +315,12 @@ complete a review end to end without touching any file committed to the reposito
   to the resulting comment.
 - **Change event**: A normalized signal that a specific pull request changed, carrying enough
   identity to be deduplicated. Produced by polling now; by push notification later.
-- **Operator configuration**: The search query, concurrency limit, refresh interval, and review
-  prompt settings for one person on one machine. Local only.
+- **Active search query**: The one GitHub search the operator is watching. Owned by their
+  browser's local storage, sent with each request, held in server memory for the life of the
+  process. Never written to disk.
+- **Operator settings**: Concurrency limit, refresh interval, timeouts, port, and review prompt
+  paths for one person on one machine. A gitignored local file. Contains no query and no
+  credential.
 
 ## Success Criteria *(mandatory)*
 
@@ -331,7 +356,10 @@ complete a review end to end without touching any file committed to the reposito
   no promises about pull requests that change while it is closed beyond catching up at next start.
 - Change detection starts as polling on a configurable interval; push-based delivery is a later
   addition behind the same interface, not part of this feature's scope.
-- A single operator uses one query at a time; multiple saved queries are out of scope for v1.
+- A single operator uses one query at a time, stored in their browser; multiple saved queries are
+  out of scope for v1. The server keeps no query of its own, so with no browser connected since
+  startup there is nothing to refresh — consistent with this being a tool used while the operator
+  is at their machine.
 - Status groups are derived from GitHub data only; the app does not ask people to mark pull
   requests as done.
 - Draft pull requests are shown but excluded from group actions by default.

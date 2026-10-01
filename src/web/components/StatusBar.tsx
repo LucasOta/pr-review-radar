@@ -3,11 +3,13 @@ import type { BoardResponse } from '@shared/types.js'
 
 interface Props {
   board: BoardResponse
+  /** The browser's query, which may be ahead of the one the board was built from. */
+  query: string | null
   onRefresh: () => void
   onEditQuery: () => void
 }
 
-export function StatusBar({ board, onRefresh, onEditQuery }: Props): JSX.Element {
+export function StatusBar({ board, query, onRefresh, onEditQuery }: Props): JSX.Element {
   return (
     <div className="statusbar">
       <span className="operator">
@@ -16,8 +18,13 @@ export function StatusBar({ board, onRefresh, onEditQuery }: Props): JSX.Element
         )}
         {board.operator.login}
       </span>
-      <button type="button" className="link" onClick={onEditQuery} title={board.query}>
-        <code>{truncate(board.query, 48)}</code>
+      <button
+        type="button"
+        className="link"
+        onClick={onEditQuery}
+        title={query ?? 'No query set — click to set one'}
+      >
+        <code>{query ? truncate(query, 48) : 'set a query'}</code>
       </button>
       {board.rateLimit && (
         <span className="muted" title={`resets ${board.rateLimit.resetAt}`}>

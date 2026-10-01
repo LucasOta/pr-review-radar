@@ -77,6 +77,25 @@ Single project at repository root: `src/server/`, `src/web/`, `src/shared/`, `te
 
 **Checkpoint**: US1 is independently shippable — the board replaces the manual summary prompt.
 
+### US1 amendment — the query lives in the browser
+
+Applied after the board shipped: the query moved out of `config/config.json` into the operator's
+browser so a shared repository carries nobody's query (FR-002, FR-002a–c).
+
+- [x] T030a [US1] Remove `searchQuery` from the config schema and strip it from any config file or
+      request body, so the server cannot persist a query
+- [x] T030b [US1] Add `src/web/queryStorage.ts` — the only module touching `localStorage`,
+      degrading to "no query" when storage is blocked
+- [x] T030c [US1] Hold the active query in `BoardService` memory, dropping the snapshot cache when
+      it changes and refusing to call GitHub for a blank or placeholder query
+- [x] T030d [US1] Carry the query on `GET /api/board?q=` and `POST /api/refresh`; return
+      `409 no_query` when none is usable; expose `hasQuery` on `/api/health`
+- [x] T030e [US1] Restore the query from storage on load, adopt a change made in another tab, and
+      offer Save / Cancel / Clear in the query editor
+- [x] T030f [US1] Write `tests/unit/queryStorage.test.ts` and extend the board and config tests:
+      query switch drops the cache, app-owned rows survive, no query means no GitHub call, and a
+      `searchQuery` sent to `PUT /api/config` is never written to disk
+
 ---
 
 ## Phase 4: User Story 2 — Request, preview, post (P1)
@@ -146,10 +165,10 @@ Single project at repository root: `src/server/`, `src/web/`, `src/shared/`, `te
 **Independent test**: Fresh clone on a second machine with a different GitHub account completes the loop touching no committed file.
 
 - [ ] T060 [US5] Write `README.md` — what it does, prerequisites, clone/install/run, the review loop, troubleshooting, derived from quickstart.md
-- [ ] T061 [P] [US5] Ship `config/config.example.json` and document the default query template with placeholder org and label (FR-001, FR-002)
+- [ ] T061 [P] [US5] Ship `config/config.example.json` for server-side settings and document the query example (placeholder org and label) shown in the UI (FR-001, FR-002)
 - [ ] T062 [P] [US5] Make every preflight failure message name the missing tool and its install command (FR-044)
 - [ ] T063 [P] [US5] Add `npm run doctor` — report Node version, `gh` login, `claude` version, config path, database path, and current rate limit
-- [ ] T064 [US5] Verify on a clean clone that no credential or personal configuration is ever staged; add `tests/integration/no-secrets.test.ts` asserting the config loader writes only outside the repository's tracked paths
+- [ ] T064 [US5] Verify on a clean clone that no credential or personal configuration is ever staged; add `tests/integration/no-secrets.test.ts` asserting the config loader writes only outside the repository's tracked paths and that no file on disk ever contains the search query
 
 ---
 

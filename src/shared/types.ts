@@ -106,7 +106,8 @@ export interface OperatorIdentity {
 
 export interface BoardResponse {
   operator: OperatorIdentity
-  query: string
+  /** The query the board was built from. Null until the browser supplies one. */
+  query: string | null
   lastRefreshAt: string | null
   stale: boolean
   rateLimit: RateLimitInfo | null
@@ -114,8 +115,11 @@ export interface BoardResponse {
   repoErrors: RepoError[]
 }
 
+/**
+ * Server-side settings. The search query is deliberately NOT here — it lives in the browser's
+ * localStorage and travels with each request (see contracts/http-api.md).
+ */
 export interface OperatorConfig {
-  searchQuery: string
   refreshIntervalMs: number
   maxConcurrentRuns: number
   runTimeoutMs: number
@@ -126,9 +130,19 @@ export interface OperatorConfig {
   includeDraftsInBulk: boolean
 }
 
-export const DEFAULT_QUERY_TEMPLATE = 'org:YOUR_ORG is:pr is:open label:YOUR_LABEL'
+/** Shown as placeholder text in the query editor; never used as a real query. */
+export const QUERY_EXAMPLE = 'org:YOUR_ORG is:pr is:open label:YOUR_LABEL'
 
-/** True when the query is still the shipped placeholder, i.e. the operator has not configured one. */
-export function isPlaceholderQuery(query: string): boolean {
-  return query.includes('YOUR_ORG') || query.includes('YOUR_LABEL') || query.trim() === ''
+/** Where the browser keeps the operator's query. */
+export const QUERY_STORAGE_KEY = 'pr-review-radar:query'
+
+/**
+ * A query the app must refuse to send to GitHub: blank, or still carrying the example's
+ * placeholders. Guards against an empty board silently burning API quota.
+ */
+export function isUsableQuery(query: string | null | undefined): query is string {
+  if (!query) return false
+  const trimmed = query.trim()
+  if (trimmed === '') return false
+  return !trimmed.includes('YOUR_ORG') && !trimmed.includes('YOUR_LABEL')
 }

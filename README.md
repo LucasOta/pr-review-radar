@@ -30,15 +30,19 @@ npm start            # http://127.0.0.1:4317
 For development, `npm run dev` runs the server with reload plus Vite on
 http://127.0.0.1:5317. `npm run doctor` reports what the app can see without starting it.
 
-Set your GitHub search query in the UI — the same syntax as GitHub search, e.g.
-`org:YOUR_ORG is:pr is:open label:YOUR_LABEL`. It is stored in `config/config.json`, which is
-gitignored, along with the local cache in `data/`. The app reads your token from `GITHUB_TOKEN` or
-`gh auth token` and keeps it in memory only.
+Set your GitHub search query in the UI — same syntax as GitHub search, e.g.
+`org:YOUR_ORG is:pr is:open label:YOUR_LABEL`. It is stored **in your browser**
+(`localStorage["pr-review-radar:query"]`) and sent to your local server with each request, so a
+shared repository carries nobody's query and your teammates each keep their own. Server-side
+settings live in `config/config.json`; that file and the `data/` cache are gitignored. The app
+reads your token from `GITHUB_TOKEN` or `gh auth token` and keeps it in memory only.
 
 ### What works today
 
 - Live board of every open PR matching your query, grouped: needs AI review, awaiting re-review,
   running, ready for human, error.
+- Your query, customizable and remembered by your browser. Switching it drops the old results
+  immediately; a blank or placeholder query never touches the GitHub API.
 - Status computed from GitHub facts on every read, so it cannot drift.
 - Per-repo access failures reported without taking the board down; API quota and last-refresh
   time in the status bar.

@@ -117,6 +117,11 @@ export class Repositories {
       .run(repo, number)
   }
 
+  /** Drops the whole cache. Used when the operator switches queries; app-owned rows survive. */
+  clearSnapshots(): void {
+    this.db.prepare('DELETE FROM pull_request_snapshots').run()
+  }
+
   /** Removes every snapshot not present in the given set — pull requests that left the query. */
   pruneSnapshotsNotIn(keys: ReadonlySet<string>): Array<{ repo: string; number: number }> {
     const rows = this.db.prepare('SELECT repo, number FROM pull_request_snapshots').all() as Row[]

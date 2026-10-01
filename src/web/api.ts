@@ -6,8 +6,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   })
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { error?: string; issues?: unknown }
-    throw new ApiError(body.error ?? `${response.status} ${response.statusText}`, response.status, body)
+    const body = (await response.json().catch(() => ({}))) as { error?: string; message?: string }
+    throw new ApiError(
+      body.message ?? body.error ?? `${response.status} ${response.statusText}`,
+      response.status,
+      body,
+    )
   }
   return (await response.json()) as T
 }
@@ -23,9 +27,15 @@ export class ApiError extends Error {
 }
 
 export const api = {
-  board: () => request<BoardResponse>('/api/board'),
+  /** The query travels with the request: the browser owns it, the server just adopts it. */
+  board: (query: string | null) =>
+    request<BoardResponse>(query === null ? '/api/board' : `/api/board?q=${encodeURIComponent(query)}`),
   config: () => request<OperatorConfig>('/api/config'),
   updateConfig: (patch: Partial<OperatorConfig>) =>
     request<OperatorConfig>('/api/config', { method: 'PUT', body: JSON.stringify(patch) }),
-  refresh: () => request<{ accepted: boolean }>('/api/refresh', { method: 'POST' }),
+  refresh: (query: string | null) =>
+    request<{ accepted: boolean }>('/api/refresh', {
+      method: 'POST',
+      body: JSON.stringify(query === null ? {} : { query }),
+    }),
 }

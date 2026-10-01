@@ -101,13 +101,26 @@ type PullRequestChanged = {
 Deduplicated on `(repo, number, headSha, updatedAt)` by `events/bus.ts` (FR-036). Not stored —
 events are a transport concern, and persisting them would invite treating them as truth.
 
+### Active search query (browser local storage + server memory)
+
+Not a database row. The operator's browser is the owner:
+
+| Where | Key / field | Lifetime |
+|---|---|---|
+| Browser | `localStorage["pr-review-radar:query"]` | Until the operator changes or clears it |
+| Server | `BoardService.activeQuery` | Process lifetime; set from each request carrying `q` |
+
+Setting a different query drops every cached snapshot before the board is read again (FR-002b) —
+free to do, because the cache is disposable. App-owned rows survive, so a pull request that
+reappears under a later query keeps its run and post history. A blank query, or one still
+carrying the example's placeholders, is never sent to GitHub (FR-002c).
+
 ### OperatorConfig (local file, gitignored)
 
-`config/config.json`, validated by Zod:
+`config/config.json`, validated by Zod. Contains no query and no credential:
 
 | Key | Default | Notes |
 |---|---|---|
-| `searchQuery` | `org:YOUR_ORG is:pr is:open label:YOUR_LABEL` | FR-001 |
 | `refreshIntervalMs` | `60000` | |
 | `maxConcurrentRuns` | `3` | FR-020 |
 | `runTimeoutMs` | `600000` | FR-017 |

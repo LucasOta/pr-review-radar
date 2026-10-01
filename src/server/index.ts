@@ -7,7 +7,6 @@ import { registerStatic } from './http/static.js'
 import { formatPreflightError, preflight, PreflightError } from './preflight.js'
 import { openDatabase } from './store/db.js'
 import { Repositories } from './store/repos.js'
-import { isPlaceholderQuery } from '../shared/types.js'
 
 const HOST = '127.0.0.1'
 
@@ -47,16 +46,12 @@ async function main(): Promise<void> {
   registerRoutes(app, { board, config, refreshNow })
   await registerStatic(app)
 
-  const { port, searchQuery } = config.get()
+  const { port } = config.get()
   await app.listen({ host: HOST, port })
 
   const identity = await clients.identity().catch(() => null)
   app.log.info(`Acting as ${identity?.login ?? 'unknown GitHub user'}`)
-  if (isPlaceholderQuery(searchQuery)) {
-    app.log.warn('No search query configured yet — set one in the UI to populate the board.')
-  } else {
-    void refreshNow()
-  }
+  // The query lives in the browser; the board adopts it when the UI connects.
   app.log.info(`Board at http://${HOST}:${port}`)
 
   const shutdown = async (): Promise<void> => {

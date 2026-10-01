@@ -4,7 +4,7 @@ import { fetchBoard, type GraphQLTransport } from '../github/fetchBoard.js'
 import { buildView, groupViews } from '../domain/view.js'
 import type { ConfigStore } from '../config/store.js'
 import type { PullRequestSnapshot, Repositories } from '../store/repos.js'
-import { isPlaceholderQuery } from '../../shared/types.js'
+import { isUsableQuery } from '../../shared/types.js'
 
 const LAST_REFRESH_KEY = 'lastRefreshAt'
 
@@ -23,6 +23,12 @@ export interface RefreshOutcome {
 export class BoardService {
   private repoErrors: RepoError[] = []
   private lastError: string | null = null
+  /**
+   * The query the browser is currently watching. Owned by localStorage on the client and pushed
+   * here with each request; the server only remembers it for the lifetime of the process so the
+   * background poller has a target. Nothing about the query is written to disk.
+   */
+  private activeQuery: string | null = null
 
   constructor(
     private readonly repos: Repositories,
@@ -31,15 +37,35 @@ export class BoardService {
   ) {}
 
   /**
+   * Adopts the browser's query. Changing it invalidates the cache, which holds snapshots that
+   * matched the previous query — dropping them is free (Constitution II). Returns true when the
+   * query actually changed, so the caller knows a refresh is due.
+   */
+  setQuery(query: string | null): boolean {
+    const next = query?.trim() ?? null
+    if (next === this.activeQuery) return false
+    this.activeQuery = next
+    this.repos.clearSnapshots()
+    this.repoErrors = []
+    this.lastError = null
+    this.repos.setState(LAST_REFRESH_KEY, '')
+    return true
+  }
+
+  get query(): string | null {
+    return this.activeQuery
+  }
+
+  /**
    * Pulls the current search result, writes changed snapshots, prunes departed pull requests.
    * Returns which pull requests actually moved — the caller decides what to do with that
    * (US3 turns it into events). Unchanged pull requests are not rewritten (Constitution V).
    */
   async refresh(): Promise<RefreshOutcome> {
-    const query = this.config.get().searchQuery
+    const query = this.activeQuery
     const at = new Date().toISOString()
 
-    if (isPlaceholderQuery(query)) {
+    if (!isUsableQuery(query)) {
       this.lastError = null
       return { changed: [], removed: [], rateLimit: this.clients.rateLimit(), repoErrors: [], at }
     }
@@ -92,11 +118,11 @@ export class BoardService {
       }),
     )
 
-    const lastRefreshAt = this.repos.getState(LAST_REFRESH_KEY)
+    const lastRefreshAt = this.repos.getState(LAST_REFRESH_KEY) || null
 
     return {
       operator: await this.clients.identity(),
-      query: config.searchQuery,
+      query: this.activeQuery,
       lastRefreshAt,
       stale: this.isStale(lastRefreshAt, config.refreshIntervalMs),
       rateLimit: this.clients.rateLimit(),
@@ -110,6 +136,8 @@ export class BoardService {
   }
 
   private isStale(lastRefreshAt: string | null, intervalMs: number): boolean {
+    // Without a query there is nothing to be stale about.
+    if (!isUsableQuery(this.activeQuery)) return false
     if (this.lastError) return true
     if (!lastRefreshAt) return true
     const age = Date.now() - Date.parse(lastRefreshAt)

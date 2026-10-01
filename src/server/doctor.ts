@@ -7,6 +7,7 @@ import { createClients } from './github/client.js'
 async function main(): Promise<void> {
   const checks = await preflight()
   const config = new ConfigStore()
+  void config
 
   const clients = createClients(checks.token)
   const identity = await clients.identity()
@@ -19,7 +20,7 @@ async function main(): Promise<void> {
     `account     ${identity.login}`,
     `config      ${CONFIG_FILE}`,
     `database    ${DB_FILE}`,
-    `query       ${config.get().searchQuery}`,
+    `query       stored in your browser (localStorage), not on disk`,
     `rate limit  ${data.resources.core.remaining}/${data.resources.core.limit} core, ` +
       `${data.resources.graphql?.remaining ?? '?'}/${data.resources.graphql?.limit ?? '?'} graphql`,
   ]

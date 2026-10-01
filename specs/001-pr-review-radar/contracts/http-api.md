@@ -7,14 +7,20 @@ Only the two routes marked **WRITES TO GITHUB** cause any outbound mutation (Pri
 
 ## Board
 
-### `GET /api/board`
+### `GET /api/board?q=<search query>`
 
 Returns the current board from cache, with status computed on read.
+
+`q` is the query the browser holds in local storage, URL-encoded. The server adopts it for the
+session; when it differs from the query already in use, the cache is dropped and a refresh is
+scheduled, so this first response may legitimately be empty while the new query loads. Omitting
+`q` reads the board with whatever query the session already adopted — what a second tab or a
+`curl` does. The response's `query` is `null` until a browser supplies one.
 
 ```jsonc
 {
   "operator": { "login": "octocat", "avatarUrl": "..." },
-  "query": "org:IntusCare is:pr is:open label:squad-x",
+  "query": "org:IntusCare is:pr is:open label:squad-x",  // null until a browser supplies one
   "lastRefreshAt": "2026-10-01T18:04:12Z",
   "stale": false,
   "rateLimit": { "remaining": 4821, "resetAt": "2026-10-01T19:00:00Z" },
@@ -52,17 +58,28 @@ Returns the current board from cache, with status computed on read.
 
 ### `POST /api/refresh`
 
+```jsonc
+{ "query": "org:acme is:pr is:open label:squad-x" }  // optional; adopts the query first
+```
+
 Triggers an immediate polling cycle (FR-037). `202 { "accepted": true }`. The result arrives on
-the event stream, not in this response.
+the event stream, not in this response. Returns `409 { "error": "no_query" }` when no usable
+query is set — a blank query, or one still carrying the example's placeholders (FR-002c).
 
 ## Configuration
 
-### `GET /api/config` → current `OperatorConfig` (never includes a token)
+### `GET /api/config` → current `OperatorConfig` (never includes a token or a query)
 
 ### `PUT /api/config`
 
-Body: partial config. Validated by Zod; invalid bodies return `400` with field errors. Changing
-`searchQuery` schedules an immediate refresh.
+Body: partial config — refresh interval, concurrency, timeouts, port, prompt paths. Validated by
+Zod; invalid bodies return `400` with field errors. A `searchQuery` key sent here is stripped and
+never persisted: the query belongs to the browser (FR-002).
+
+### `GET /api/health`
+
+`{ "ok": true, "hasQuery": false, "lastRefreshError": null }` — enough to tell a running server
+with nothing to watch from one that is failing to refresh.
 
 ## Review runs
 

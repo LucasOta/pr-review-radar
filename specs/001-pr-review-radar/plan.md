@@ -42,6 +42,11 @@ the built React bundle.
 visible on an open board within one polling interval (default 60s). A no-change polling cycle
 costs one GraphQL request and zero review work.
 
+**Query ownership**: The browser holds the search query in `localStorage` and sends it with each
+board read and refresh. The server keeps it in memory only, for the life of the process, so the
+background poller has a target; changing it drops the cache, which costs nothing. This keeps a
+shared repository free of any one person's query.
+
 **Constraints**: Must bind to localhost by default. Must stay inside the operator's GitHub rate
 limit across an 8-hour day at the default interval (~480 GraphQL requests). Must never write to
 GitHub without an explicit user action. Must run with `npm install` plus one command given Node,
@@ -56,7 +61,7 @@ GitHub without an explicit user action. Must run with `npm install` plus one com
 
 | Principle | Gate | How this plan satisfies it |
 |---|---|---|
-| I. Local-first, credentials local | No stored secrets; no shared server | Token read at startup from `gh auth token`/`GITHUB_TOKEN`, held in memory only; `data/` and `config/` gitignored; server binds `127.0.0.1`; reviews run through the operator's own `claude` |
+| I. Local-first, credentials local | No stored secrets; no shared server | Token read at startup from `gh auth token`/`GITHUB_TOKEN`, held in memory only; the search query lives in the browser's `localStorage` and is never written to disk; `data/` and `config/` gitignored; server binds `127.0.0.1`; reviews run through the operator's own `claude` |
 | II. GitHub is source of truth | Local DB must be disposable | SQLite holds a cache table (rebuildable) plus app-owned rows (runs, drafts, posts); status is computed on read from GitHub facts, never persisted as truth; deleting the DB loses only run history |
 | III. No unapproved writes | Exactly one write path | A single `postDraft` service is the only module importing a GitHub mutation client; it requires a draft in `ready` state and an explicit `POST /api/drafts/:id/post`; a unit test asserts no other module imports the mutating client |
 | IV. Event-driven, pluggable sources | Polling must be replaceable | `ChangeSource` emits `PullRequestChanged{repo, number, headSha, updatedAt}`; `PollingSource` implements it; the bus dedupes on `(repo, number, headSha, updatedAt)`; consumers are idempotent so a future `WebhookSource` is additive |
@@ -95,7 +100,7 @@ src/
 │   ├── board/
 │   │   └── service.ts        # Cache refresh + board composition (US3 wraps this)
 │   ├── config/
-│   │   ├── schema.ts         # Zod config schema + defaults
+│   │   ├── schema.ts         # Zod settings schema + defaults (no query, no token)
 │   │   └── store.ts          # Load/save config/config.json (gitignored)
 │   ├── preflight.ts          # Verify node/gh/claude, resolve token, identify operator
 │   ├── github/
@@ -127,7 +132,8 @@ src/
 └── web/
     ├── main.tsx
     ├── App.tsx               # Board shell, status groups
-    ├── api.ts                # Typed fetch wrappers
+    ├── queryStorage.ts       # localStorage ownership of the search query
+    ├── api.ts                # Typed fetch wrappers (carry the query)
     ├── useEventStream.ts     # SSE subscription -> in-place updates
     └── components/
         ├── StatusGroup.tsx

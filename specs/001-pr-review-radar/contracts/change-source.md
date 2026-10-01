@@ -32,6 +32,9 @@ export interface ChangeSource {
 3. **Survive failure.** A failed cycle MUST be reported through `status()` and MUST NOT throw out
    of `start`. The board keeps serving its last snapshot (FR-041).
 4. **Honor the signal.** `start` MUST stop cleanly when the `AbortSignal` fires.
+5. **No query, no traffic.** The watched query is supplied by the browser, so a source MUST idle
+   — not poll, not error — until one is set, and MUST pick up a change of query without a
+   restart.
 
 ## Rules for consumers
 
@@ -43,7 +46,8 @@ export interface ChangeSource {
 
 ### `PollingSource` (this feature)
 
-Runs one batched GraphQL query every `refreshIntervalMs`, diffs against the cached snapshots,
+Runs one batched GraphQL query every `refreshIntervalMs` against the session's active query,
+diffs against the cached snapshots,
 writes new snapshots, and emits one event per changed pull request. Also emits removals for pull
 requests that dropped out of the result set. Implements `refreshNow()` for `POST /api/refresh`.
 

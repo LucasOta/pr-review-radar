@@ -24,17 +24,19 @@ npm run dev          # or: npm run build && npm start
 
 Open http://127.0.0.1:4317.
 
-On first run the app has no query. Set one in the UI, or create `config/config.json`:
+On first run the app asks for a search query. Type one in the UI — the same syntax as GitHub
+search:
 
-```json
-{
-  "searchQuery": "org:IntusCare is:pr is:open label:squad-x",
-  "refreshIntervalMs": 60000,
-  "maxConcurrentRuns": 3
-}
+```
+org:IntusCare is:pr is:open label:squad-x
 ```
 
-`config/` and `data/` are gitignored. Nothing you configure is committable.
+It is stored in **your browser**, under `localStorage["pr-review-radar:query"]`, and sent to the
+local server with each request. Nothing writes it to disk, so your query is yours even though the
+code is shared. Clearing your browser data clears the query; the app asks for it again.
+
+Server-side settings (refresh interval, concurrency, timeouts, port) live in `config/config.json`.
+That file and `data/` are gitignored. Nothing you configure is committable.
 
 ## The loop
 
@@ -67,6 +69,7 @@ On first run the app has no query. Set one in the UI, or create `config/config.j
 |---|---|---|
 | `gh auth token` failed at startup | Not logged in | `gh auth login` |
 | Board empty, query looks right | Query matches nothing, or the token lacks access to those repos | Test the same query on github.com/search while signed in |
+| App keeps asking for a query | Browser storage is blocked (private window, extension) | Use a normal window; the app still works per-session but will not remember |
 | One repository shows an error row | Token lacks access to it | The rest of the board still works; request access or narrow the query |
 | Run fails with "diff exceeds configured limit" | Pull request is larger than `maxDiffBytes` | Raise the limit, or review that pull request by hand |
 | Board marked stale | Refresh failing | Check the status bar error; the app retries with backoff |
