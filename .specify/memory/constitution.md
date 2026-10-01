@@ -74,8 +74,10 @@ original problem.
   `claude` CLI installed. Missing prerequisites MUST produce an actionable error naming the
   missing tool, never a stack trace.
 - **Configuration**: The set of watched pull requests MUST be expressed as a user-editable
-  GitHub search query, stored in local configuration outside version control. Team- or
-  user-specific values MUST NOT be hardcoded.
+  GitHub search query. That query is owned by the operator's browser (local storage) and MUST
+  NOT be written to disk by the server, committed, or shipped as a default. Server-side
+  settings (ports, limits, timeouts) live in a gitignored local file. Team- or user-specific
+  values MUST NOT be hardcoded anywhere.
 - **Binding**: The server MUST bind to localhost by default. Any change to that default MUST be
   an explicit, documented opt-in.
 - **Rate limits**: The app MUST surface remaining GitHub API quota and MUST back off rather
@@ -109,4 +111,4 @@ Compliance is verified at review time: the reviewer checks the change against th
 above, with particular attention to Principle I (no shared or stored credentials) and
 Principle III (no unapproved writes to GitHub).
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-01 | **Last Amended**: 2026-10-01
+**Version**: 1.0.1 | **Ratified**: 2026-10-01 | **Last Amended**: 2026-10-01
