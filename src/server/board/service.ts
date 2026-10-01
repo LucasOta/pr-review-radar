@@ -1,4 +1,4 @@
-import type { BoardResponse, RateLimitInfo, RepoError } from '../../shared/types.js'
+import type { BoardResponse, PullRequestView, RateLimitInfo, RepoError } from '../../shared/types.js'
 import type { GitHubClients } from '../github/client.js'
 import { fetchBoard, type GraphQLTransport } from '../github/fetchBoard.js'
 import { buildView, groupViews } from '../domain/view.js'
@@ -104,6 +104,18 @@ export class BoardService {
       this.lastError = error instanceof Error ? error.message : String(error)
       throw error
     }
+  }
+
+  /** One row, recomputed from current facts. Used to push a single update to an open board. */
+  view(repo: string, number: number): PullRequestView | null {
+    const snapshot = this.repos.getSnapshot(repo, number)
+    if (!snapshot) return null
+    return buildView({
+      snapshot,
+      runs: this.repos.listRunsFor(repo, number),
+      posted: this.repos.listPostedFor(repo, number),
+      pendingDraft: this.repos.findPendingDraft(repo, number),
+    })
   }
 
   async board(): Promise<BoardResponse> {

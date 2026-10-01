@@ -78,8 +78,19 @@ never persisted: the query belongs to the browser (FR-002).
 
 ### `GET /api/health`
 
-`{ "ok": true, "hasQuery": false, "lastRefreshError": null, "activeRuns": 0, "queuedRuns": 0 }` —
-enough to tell a running server with nothing to watch from one that is failing to refresh.
+```jsonc
+{
+  "ok": true,
+  "hasQuery": true,
+  "lastRefreshError": null,
+  "activeRuns": 0,
+  "queuedRuns": 0,
+  "source": { "name": "polling", "healthy": true, "lastSuccessAt": "2026-10-01T19:18:45Z" },
+  "streamClients": 1
+}
+```
+
+Enough to tell a running server with nothing to watch from one that is failing to refresh.
 
 ## Review runs
 

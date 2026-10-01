@@ -13,8 +13,8 @@ changed. This app keeps that board live instead.
 
 Runs entirely on your machine with your own credentials. Teammates clone it and use theirs.
 
-**Status**: the board and the review loop ship (User Stories 1 and 2). Background polling is
-specified and next up. Built with [GitHub Spec Kit](https://github.com/github/spec-kit).
+**Status**: the board, the review loop, and live updates ship (User Stories 1–3). Bulk actions and
+team packaging are next. Built with [GitHub Spec Kit](https://github.com/github/spec-kit).
 
 ## Run it
 
@@ -51,14 +51,21 @@ reads your token from `GITHUB_TOKEN` or `gh auth token` and keeps it in memory o
   commit asks before it goes out.
 - Already reviewed at this commit? The request is refused with the commit shown, not silently
   re-run. **Re-run** forces it.
+- **Leave the board open and it keeps itself current.** It polls on its own, re-evaluates only the
+  PRs that actually changed, and pushes rows to the browser over an event stream — no prompt to
+  re-run, no page reload. A quiet cycle costs one GraphQL query and nothing else.
+- Failures degrade instead of blanking: a failed refresh keeps the last board, marks it stale, and
+  retries. The status bar shows live/offline, API quota, and last successful refresh.
 - Status computed from GitHub facts on every read, so it cannot drift.
 - Per-repo access failures reported without taking the board down; API quota and last-refresh
   time in the status bar.
 
 ### Not yet
 
-Background polling and live updates (the board currently refreshes on a timer while open), and
-bulk actions — see [tasks.md](specs/001-pr-review-radar/tasks.md) phases 5 onward.
+Bulk "review everything in this group" actions and the team-packaging polish — see
+[tasks.md](specs/001-pr-review-radar/tasks.md) phases 6 onward. Webhook delivery is designed for
+([ChangeSource](specs/001-pr-review-radar/contracts/change-source.md)) but not built: adding it is
+a new file implementing the same interface, not a refactor.
 
 ## Specification
 

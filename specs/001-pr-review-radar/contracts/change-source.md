@@ -13,16 +13,29 @@ export type PullRequestChanged = {
   source: 'polling' | 'webhook'
 }
 
+export type PullRequestRemoved = {
+  type: 'pull_request.removed'
+  repo: string
+  number: number
+  source: 'polling' | 'webhook'
+}
+
+export type ChangeEvent = PullRequestChanged | PullRequestRemoved
+
 export interface ChangeSource {
-  readonly name: string
+  readonly name: 'polling' | 'webhook'
   /** Begin producing events. Resolves once the source is live. */
-  start(emit: (event: PullRequestChanged) => void, signal: AbortSignal): Promise<void>
+  start(emit: (event: ChangeEvent) => void, signal: AbortSignal): Promise<void>
   /** Force a production cycle now, if the source supports it. No-op otherwise. */
   refreshNow?(): Promise<void>
   /** Health for the status bar. */
   status(): { healthy: boolean; lastSuccessAt?: string; lastError?: string }
 }
 ```
+
+A pull request leaving the watched set is a change like any other, so removal is part of the same
+union rather than a side channel — otherwise a future webhook source could report that a pull
+request closed but have no way to say so.
 
 ## Rules for implementations
 
@@ -41,6 +54,8 @@ export interface ChangeSource {
 1. **Idempotent.** Handling the same event twice MUST produce one re-evaluation, one run at most,
    and never a second posted comment (FR-036).
 2. **Source-blind.** No consumer may branch on `event.source` for anything but display.
+3. **Survive each other.** A consumer that throws must not stop the others; the bus reports the
+   failure and keeps fanning out.
 
 ## Implementations
 
@@ -50,6 +65,10 @@ Runs one batched GraphQL query every `refreshIntervalMs` against the session's a
 diffs against the cached snapshots,
 writes new snapshots, and emits one event per changed pull request. Also emits removals for pull
 requests that dropped out of the result set. Implements `refreshNow()` for `POST /api/refresh`.
+
+Deduplication lives in the bus, not the source: identity is `(repo, number, headSha, updatedAt)`
+for a change and `(repo, number)` for a removal, with a bounded memory of recent identities. A
+pull request that leaves and returns is not mistaken for a duplicate in either direction.
 
 ### `WebhookSource` (future, out of scope)
 

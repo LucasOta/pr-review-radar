@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BoardResponse } from '@shared/types.js'
 import { STATUS_ORDER, isUsableQuery } from '@shared/types.js'
 import { api } from './api.js'
+import { applyPullRequest, countRows, removePullRequest } from './board.js'
+import { useEventStream } from './useEventStream.js'
 import { createQueryStore } from './queryStorage.js'
 import { StatusBar } from './components/StatusBar.js'
 import { StatusGroup } from './components/StatusGroup.js'
@@ -17,6 +19,7 @@ export function App(): JSX.Element {
   const [loading, setLoading] = useState(true)
   const [editingQuery, setEditingQuery] = useState(() => !isUsableQuery(store.read()))
   const [previewDraftId, setPreviewDraftId] = useState<string | null>(null)
+  const [streamLive, setStreamLive] = useState(false)
   const queryRef = useRef(query)
   queryRef.current = query
 
@@ -34,10 +37,28 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     void load()
-    // US3 replaces this interval with the SSE stream.
-    const timer = setInterval(() => void load(), 5_000)
+    // Safety net only: the stream drives updates, this catches a stream that died quietly.
+    const timer = setInterval(() => void load(), 120_000)
     return () => clearInterval(timer)
   }, [load])
+
+  useEventStream({
+    // Every (re)connect resynchronizes, so a gap in the stream cannot leave stale rows.
+    onConnect: () => {
+      setStreamLive(true)
+      void load()
+    },
+    onDisconnect: () => setStreamLive(false),
+    'pr.updated': ({ pullRequest }) =>
+      setBoard((current) => (current ? applyPullRequest(current, pullRequest) : current)),
+    'pr.removed': ({ repo, number }) =>
+      setBoard((current) => (current ? removePullRequest(current, repo, number) : current)),
+    'refresh.completed': ({ at, rateLimit }) =>
+      setBoard((current) =>
+        current ? { ...current, lastRefreshAt: at, stale: false, rateLimit } : current,
+      ),
+    'draft.resolved': () => void load(),
+  })
 
   // Another tab changed the query: adopt it rather than fighting over the board.
   useEffect(() => {
@@ -93,7 +114,7 @@ export function App(): JSX.Element {
 
   if (!board) return <main className="shell" />
 
-  const total = STATUS_ORDER.reduce((sum, status) => sum + board.groups[status].length, 0)
+  const total = countRows(board)
   const hasQuery = isUsableQuery(query)
 
   return (
@@ -103,6 +124,7 @@ export function App(): JSX.Element {
         <StatusBar
           board={board}
           query={query}
+          live={streamLive}
           onRefresh={refresh}
           onEditQuery={() => setEditingQuery(true)}
         />

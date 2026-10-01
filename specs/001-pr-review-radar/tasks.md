@@ -129,17 +129,17 @@ browser so a shared repository carries nobody's query (FR-002, FR-002a–c).
 
 **Independent test**: Push a commit to a watched pull request from elsewhere; the row moves within one interval.
 
-- [ ] T045 [US3] Implement `src/server/events/ChangeSource.ts` — interface and `PullRequestChanged` type exactly as in contracts/change-source.md
-- [ ] T046 [US3] Implement `src/server/events/bus.ts` — dedupe on `(repo, number, headSha, updatedAt)`, fan-out, consumer error isolation (FR-036)
-- [ ] T047 [US3] Implement `src/server/events/PollingSource.ts` — interval cycle, snapshot diffing, emit only on changed `updatedAt`/`headSha`, emit removals for disappeared pull requests, `refreshNow()`, `status()` with lastSuccessAt/lastError (FR-032, FR-033, FR-041)
-- [ ] T048 [US3] Implement `src/server/http/sse.ts` — `GET /api/events` with `pr.updated`, `pr.removed`, `run.updated`, `draft.ready`, `draft.resolved`, `refresh.completed`, `error`, plus a 15s heartbeat
-- [ ] T049 [US3] Emit run and draft lifecycle events from the queue and draft services into the SSE hub
+- [x] T045 [US3] Implement `src/server/events/ChangeSource.ts` — interface plus the `ChangeEvent` union (changed + removed) as in contracts/change-source.md
+- [x] T046 [US3] Implement `src/server/events/bus.ts` — dedupe on `(repo, number, headSha, updatedAt)`, fan-out, consumer error isolation (FR-036)
+- [x] T047 [US3] Implement `src/server/events/PollingSource.ts` — interval cycle, snapshot diffing, emit only on changed `updatedAt`/`headSha`, emit removals for disappeared pull requests, `refreshNow()`, `status()` with lastSuccessAt/lastError (FR-032, FR-033, FR-041)
+- [x] T048 [US3] Implement `src/server/http/sse.ts` — `GET /api/events` with `pr.updated`, `pr.removed`, `run.updated`, `draft.ready`, `draft.resolved`, `refresh.completed`, `error`, plus a 15s heartbeat
+- [x] T049 [US3] Emit run and draft lifecycle events from the queue and draft services into the SSE hub
 - [x] T050 [US3] Implement `POST /api/refresh` delegating to `refreshNow()` (FR-037) — landed early because US1 needs a way to populate the cache; US3 repoints it at `PollingSource.refreshNow()`
-- [ ] T051 [US3] Build `src/web/useEventStream.ts` — subscribe, apply updates in place, resynchronize via `GET /api/board` on reconnect (FR-035)
-- [ ] T052 [P] [US3] Wire staleness and last-refresh display plus a manual Refresh button into `StatusBar.tsx` (FR-038)
-- [ ] T053 [US3] Write `tests/unit/bus.test.ts` — the same event twice yields one re-evaluation and no duplicate run **(constitution-required)**
-- [ ] T054 [P] [US3] Write `tests/integration/polling.test.ts` — unchanged cycle emits nothing and performs no deep re-evaluation (FR-033, Principle V); changed head emits exactly one event; merged pull request emits a removal
-- [ ] T055 [P] [US3] Write `tests/integration/degradation.test.ts` — GitHub failure keeps the last board, marks stale, and backs off (FR-040, FR-041)
+- [x] T051 [US3] Build `src/web/useEventStream.ts` — subscribe, apply updates in place, resynchronize via `GET /api/board` on reconnect (FR-035)
+- [x] T052 [P] [US3] Wire staleness and last-refresh display plus a manual Refresh button into `StatusBar.tsx` (FR-038)
+- [x] T053 [US3] Write `tests/unit/bus.test.ts` — the same event twice yields one re-evaluation and no duplicate run **(constitution-required)**
+- [x] T054 [P] [US3] Write `tests/integration/polling.test.ts` — unchanged cycle emits nothing and performs no deep re-evaluation (FR-033, Principle V); changed head emits exactly one event; merged pull request emits a removal
+- [x] T055 [P] [US3] Write `tests/integration/degradation.test.ts` — GitHub failure keeps the last board, marks stale, and backs off (FR-040, FR-041)
 
 **Checkpoint**: The original problem is solved — no prompt re-runs to learn what changed.
 
