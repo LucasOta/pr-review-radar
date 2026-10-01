@@ -1,11 +1,48 @@
 import type { JSX } from 'react'
-import type { PullRequestView } from '@shared/types.js'
+import { useState } from 'react'
+import type { PullRequestView, ReviewKind } from '@shared/types.js'
+import { ApiError, api } from '../api.js'
 
 interface Props {
   pullRequest: PullRequestView
+  onChanged: () => void
+  onPreview: (draftId: string) => void
 }
 
-export function PullRequestRow({ pullRequest }: Props): JSX.Element {
+export function PullRequestRow({ pullRequest, onChanged, onPreview }: Props): JSX.Element {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const request = async (kind: ReviewKind, force = false): Promise<void> => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.requestReview(pullRequest.repo, pullRequest.number, kind, force)
+      onChanged()
+    } catch (cause) {
+      if (cause instanceof ApiError && code(cause) === 'already_reviewed') {
+        setError('Already reviewed at this commit — use Re-run to review it again.')
+      } else {
+        setError(cause instanceof Error ? cause.message : String(cause))
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const cancel = async (): Promise<void> => {
+    if (!pullRequest.lastRun) return
+    setBusy(true)
+    try {
+      await api.cancelRun(pullRequest.lastRun.id)
+      onChanged()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <li className="row">
       <div className="row-main">
@@ -20,6 +57,35 @@ export function PullRequestRow({ pullRequest }: Props): JSX.Element {
               {pullRequest.commitsSinceChangesRequested === 1 ? '' : 's'} since changes requested
             </span>
           )}
+        <span className="row-actions">
+          {pullRequest.pendingDraftId && (
+            <button type="button" onClick={() => onPreview(pullRequest.pendingDraftId as string)}>
+              Preview review
+            </button>
+          )}
+          {pullRequest.status === 'running' ? (
+            <button type="button" className="secondary" onClick={() => void cancel()} disabled={busy}>
+              Cancel
+            </button>
+          ) : pullRequest.status === 'awaiting_rereview' ? (
+            <button type="button" onClick={() => void request('rereview')} disabled={busy}>
+              {busy ? 'Starting…' : 'Request re-review'}
+            </button>
+          ) : pullRequest.status === 'ready_for_human' ? (
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => void request('review', true)}
+              disabled={busy}
+            >
+              Re-run
+            </button>
+          ) : (
+            <button type="button" onClick={() => void request('review')} disabled={busy}>
+              {busy ? 'Starting…' : 'Request AI review'}
+            </button>
+          )}
+        </span>
       </div>
       <div className="row-meta">
         <span className="repo">
@@ -40,9 +106,14 @@ export function PullRequestRow({ pullRequest }: Props): JSX.Element {
         {pullRequest.lastRun?.status === 'failed' && (
           <span className="error">last run failed: {pullRequest.lastRun.error ?? 'unknown'}</span>
         )}
+        {error && <span className="error">{error}</span>}
       </div>
     </li>
   )
+}
+
+function code(error: ApiError): string | undefined {
+  return (error.body as { error?: string }).error
 }
 
 function relative(iso: string): string {

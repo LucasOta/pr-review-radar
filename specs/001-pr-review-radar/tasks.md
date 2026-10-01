@@ -104,20 +104,20 @@ browser so a shared repository carries nobody's query (FR-002, FR-002a–c).
 
 **Independent test**: Review one pull request, read the output, post it, see it on GitHub under your account.
 
-- [ ] T031 [US2] Implement `src/server/github/diff.ts` — REST diff fetch with `If-None-Match` ETag cache and `maxDiffBytes` enforcement returning an explicit oversize error (FR-034, edge case)
-- [ ] T032 [P] [US2] Author `prompts/review.md` and `prompts/re-review.md`, and `src/server/review/prompt.ts` to render them with pull request metadata and diff
-- [ ] T033 [US2] Implement `src/server/review/runner.ts` — spawn `claude -p ... --output-format json`, stream stdin, enforce `runTimeoutMs`, support cancel via AbortSignal, capture exit code and stderr tail (FR-014, FR-016, FR-017, FR-018)
-- [ ] T034 [US2] Implement `src/server/review/queue.ts` — bounded concurrency, per-pull-request single-flight, already-reviewed-SHA skip with `force` override, run state transitions persisted (FR-019, FR-020, FR-021, FR-022, FR-023)
-- [ ] T035 [US2] Implement `POST /api/pulls/:repo/:number/review`, `POST /api/runs/:runId/cancel`, `GET /api/runs/:runId` per contracts/http-api.md, including the 409 bodies
-- [ ] T036 [US2] Create a `ReviewDraft` on run success and expose `GET /api/drafts/:id` with `headShaIsCurrent`
-- [ ] T037 [US2] Implement `PATCH /api/drafts/:id` (body edit, `ready` only) and `POST /api/drafts/:id/discard` (FR-025, FR-026)
-- [ ] T038 [US2] Implement `src/server/github/post.ts` — the **only** module importing a mutating Octokit method; appends the `<!-- pr-review-radar:draft:<id>:sha:<sha> -->` marker, inserts `posted_reviews`, returns comment id and URL (FR-027, FR-029, FR-031)
-- [ ] T039 [US2] Implement `POST /api/drafts/:id/post` — requires `status === "ready"`, 409 `already_posted`, 409 `stale_head` unless `acknowledgeStaleHead`, 410 when the pull request is closed (FR-024, FR-028, FR-030)
-- [ ] T040 [US2] Build `src/web/components/ReviewPreview.tsx` — rendered review, edit, Post, Discard, stale-head warning, failure view with captured output and Retry
-- [ ] T041 [P] [US2] Add per-row run controls to `PullRequestRow.tsx` — Request AI review, Cancel, Re-run, with in-progress state
-- [ ] T042 [US2] Write `tests/integration/posting-guard.test.ts` — no draft posts without an explicit call; double post returns 409 and creates one comment; stale head requires acknowledgment; a static check asserts no module outside `github/post.ts` imports a mutating client **(constitution-required)**
-- [ ] T043 [P] [US2] Write `tests/unit/queue.test.ts` — concurrency cap, single-flight rejection, already-reviewed skip, force override
-- [ ] T044 [P] [US2] Write `tests/unit/runner.test.ts` with a fake subprocess — timeout, non-zero exit, cancellation, oversize diff
+- [x] T031 [US2] Implement `src/server/github/diff.ts` — REST diff fetch with `If-None-Match` ETag cache and `maxDiffBytes` enforcement returning an explicit oversize error (FR-034, edge case)
+- [x] T032 [P] [US2] Author `prompts/review.md` and `prompts/re-review.md`, and `src/server/review/prompt.ts` to render them with pull request metadata and diff
+- [x] T033 [US2] Implement `src/server/review/runner.ts` — spawn `claude -p ... --output-format json`, stream stdin, enforce `runTimeoutMs`, support cancel via AbortSignal, capture exit code and stderr tail (FR-014, FR-016, FR-017, FR-018)
+- [x] T034 [US2] Implement `src/server/review/queue.ts` — bounded concurrency, per-pull-request single-flight, already-reviewed-SHA skip with `force` override, run state transitions persisted (FR-019, FR-020, FR-021, FR-022, FR-023)
+- [x] T035 [US2] Implement `POST /api/pulls/:owner/:name/:number/review`, `POST /api/runs/:runId/cancel`, `GET /api/runs/:runId` per contracts/http-api.md, including the 409 bodies
+- [x] T036 [US2] Create a `ReviewDraft` on run success and expose `GET /api/drafts/:id` with `headShaIsCurrent`
+- [x] T037 [US2] Implement `PATCH /api/drafts/:id` (body edit, `ready` only) and `POST /api/drafts/:id/discard` (FR-025, FR-026)
+- [x] T038 [US2] Implement `src/server/github/post.ts` — the **only** module importing a mutating Octokit method; appends the `<!-- pr-review-radar:draft:<id>:sha:<sha> -->` marker, inserts `posted_reviews`, returns comment id and URL (FR-027, FR-029, FR-031)
+- [x] T039 [US2] Implement `POST /api/drafts/:id/post` — requires `status === "ready"`, 409 `already_posted`, 409 `stale_head` unless `acknowledgeStaleHead`, 410 when the pull request is closed (FR-024, FR-028, FR-030)
+- [x] T040 [US2] Build `src/web/components/ReviewPreview.tsx` — rendered review, edit, Post, Discard, stale-head warning, failure view with captured output and Retry
+- [x] T041 [P] [US2] Add per-row run controls to `PullRequestRow.tsx` — Request AI review, Cancel, Re-run, with in-progress state
+- [x] T042 [US2] Write `tests/integration/posting-guard.test.ts` — no draft posts without an explicit call; double post returns 409 and creates one comment; stale head requires acknowledgment; a static check asserts no module outside `github/post.ts` imports a mutating client **(constitution-required)**
+- [x] T043 [P] [US2] Write `tests/unit/queue.test.ts` — concurrency cap, single-flight rejection, already-reviewed skip, force override
+- [x] T044 [P] [US2] Write `tests/unit/runner.test.ts` with a fake subprocess — timeout, non-zero exit, cancellation, oversize diff
 
 **Checkpoint**: US1 + US2 deliver the complete manual workflow the operator runs today.
 

@@ -78,12 +78,15 @@ never persisted: the query belongs to the browser (FR-002).
 
 ### `GET /api/health`
 
-`{ "ok": true, "hasQuery": false, "lastRefreshError": null }` — enough to tell a running server
-with nothing to watch from one that is failing to refresh.
+`{ "ok": true, "hasQuery": false, "lastRefreshError": null, "activeRuns": 0, "queuedRuns": 0 }` —
+enough to tell a running server with nothing to watch from one that is failing to refresh.
 
 ## Review runs
 
-### `POST /api/pulls/:repo/:number/review`
+### `POST /api/pulls/:owner/:name/:number/review`
+
+Repository names carry a slash, so the owner and name are separate path segments:
+`/api/pulls/IntusCare/carehub/5017/review`.
 
 ```jsonc
 { "kind": "review" | "rereview", "force": false }
@@ -95,6 +98,7 @@ with nothing to watch from one that is failing to refresh.
 - `409 { "error": "already_reviewed", "headSha": "abc1234" }` when a succeeded run already covers
   the current head SHA and `force` is false (FR-022). Resending with `"force": true` enqueues
   (FR-023).
+- `404 { "error": "unknown_pull_request" }` when the pull request is not on the board.
 
 ### `POST /api/runs/:runId/cancel`
 
@@ -102,7 +106,12 @@ with nothing to watch from one that is failing to refresh.
 
 ### `GET /api/runs/:runId`
 
-Full run record including `stderrTail` and `error` when failed (FR-018).
+Full run record including `stderrTail` and `error` when failed (FR-018), plus `draftId` once a
+draft exists.
+
+### `GET /api/runs`
+
+`{ "active": 1, "queued": 3 }` — queue depth for the UI's progress indicator.
 
 ### `POST /api/bulk/review`
 
@@ -115,7 +124,9 @@ Respects `maxConcurrentRuns`; skips are reported, never silent (FR-020, Principl
 
 ## Drafts
 
-### `GET /api/drafts/:id` → draft with `body`, `headSha`, `status`, and `headShaIsCurrent`
+### `GET /api/drafts` → every draft awaiting a decision (the preview tray)
+
+### `GET /api/drafts/:id` → draft with `body`, `headSha`, `status`, `headShaIsCurrent`, `currentHeadSha`, and `postedCommentUrl`
 
 ### `PATCH /api/drafts/:id`
 
