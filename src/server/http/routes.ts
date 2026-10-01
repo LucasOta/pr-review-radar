@@ -10,6 +10,8 @@ import { DraftError } from '../review/drafts.js'
 import type { ReviewPoster } from '../github/post.js'
 import { PostError } from '../github/post.js'
 import type { Repositories } from '../store/repos.js'
+import type { EventHub } from './sse.js'
+import type { ChangeSource } from '../events/ChangeSource.js'
 
 export interface RouteDeps {
   board: BoardService
@@ -18,7 +20,9 @@ export interface RouteDeps {
   queue: ReviewQueue
   drafts: DraftService
   poster: ReviewPoster
-  /** Triggers an out-of-band refresh. US3 replaces this with the polling source's refreshNow. */
+  hub: EventHub
+  source: ChangeSource
+  /** Triggers an out-of-band refresh — the polling source's refreshNow. */
   refreshNow: () => Promise<void>
 }
 
@@ -163,6 +167,8 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
   app.post<{ Params: { id: string } }>('/api/drafts/:id/discard', async (request, reply) => {
     try {
       const draft = deps.drafts.discard(request.params.id)
+      deps.hub.broadcast('draft.resolved', { draftId: draft.id, status: draft.status })
+      broadcastRow(deps, draft.repo, draft.number)
       return { status: draft.status }
     } catch (error) {
       return sendDraftError(reply, error)
@@ -178,6 +184,12 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
           draftId: request.params.id,
           acknowledgeStaleHead: request.body?.acknowledgeStaleHead ?? false,
         })
+        deps.hub.broadcast('draft.resolved', {
+          draftId: request.params.id,
+          status: 'posted',
+          commentUrl: posted.commentUrl,
+        })
+        broadcastRow(deps, posted.repo, posted.number)
         return reply.code(201).send({
           commentUrl: posted.commentUrl,
           commentId: posted.commentId,
@@ -203,7 +215,15 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
     lastRefreshError: deps.board.lastRefreshError,
     activeRuns: deps.queue.activeCount,
     queuedRuns: deps.queue.queuedCount,
+    source: { name: deps.source.name, ...deps.source.status() },
+    streamClients: deps.hub.clientCount,
   }))
+}
+
+/** Pushes one recomputed row to open boards. A pull request that already left is simply skipped. */
+function broadcastRow(deps: RouteDeps, repo: string, number: number): void {
+  const view = deps.board.view(repo, number)
+  if (view) deps.hub.broadcast('pr.updated', { pullRequest: view })
 }
 
 function sendQueueError(reply: FastifyReply, error: unknown): FastifyReply {

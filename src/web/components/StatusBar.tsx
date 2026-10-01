@@ -5,11 +5,13 @@ interface Props {
   board: BoardResponse
   /** The browser's query, which may be ahead of the one the board was built from. */
   query: string | null
+  /** Whether the event stream is connected — the board is live rather than merely loaded. */
+  live: boolean
   onRefresh: () => void
   onEditQuery: () => void
 }
 
-export function StatusBar({ board, query, onRefresh, onEditQuery }: Props): JSX.Element {
+export function StatusBar({ board, query, live, onRefresh, onEditQuery }: Props): JSX.Element {
   return (
     <div className="statusbar">
       <span className="operator">
@@ -31,6 +33,9 @@ export function StatusBar({ board, query, onRefresh, onEditQuery }: Props): JSX.
           API {board.rateLimit.remaining}/{board.rateLimit.limit}
         </span>
       )}
+      <span className={live ? 'muted' : 'warn'} title={live ? 'Receiving live updates' : 'Not connected to the update stream'}>
+        {live ? 'live' : 'offline'}
+      </span>
       <span className={board.stale ? 'warn' : 'muted'}>
         {board.lastRefreshAt
           ? `refreshed ${new Date(board.lastRefreshAt).toLocaleTimeString()}`
