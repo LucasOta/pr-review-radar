@@ -1,50 +1,112 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# PR Review Radar Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Local-First, Credentials Stay Local (NON-NEGOTIABLE)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+The application MUST run entirely on a single developer's machine with no shared server, no
+shared database, and no secret committed to the repository. Every GitHub call MUST use the
+operator's own credentials, resolved at runtime from their existing environment (`gh auth
+token`, `GITHUB_TOKEN`) — the app MUST NOT prompt for, store, or transmit a token to any
+third party. Every AI review MUST run through the operator's own locally installed `claude`
+CLI. Teammates adopt the tool by cloning the repo and running it; they MUST NOT need an
+account, invite, or credential issued by this project.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+**Rationale**: The tool reads private source code and triggers paid AI usage. Making each
+operator's own identity the only identity removes the entire class of shared-secret, access-
+scope, and billing-attribution problems, and makes "share it with my team" a `git clone`.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. GitHub Is the Source of Truth
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+GitHub state (pull requests, reviews, commits, labels) MUST be treated as authoritative and
+read-only unless the user explicitly acts. Local storage is a cache plus app-owned
+annotations (review runs, their output, timestamps); it MUST be safe to delete the local
+database at any time and rebuild it from GitHub without losing anything the user cannot
+recreate. Derived status (e.g. "awaiting re-review") MUST be computed from GitHub facts, never
+stored as the primary truth.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rationale**: A dashboard that disagrees with GitHub is worse than no dashboard. Recomputing
+from authoritative facts guarantees the UI can always be trusted and makes cache corruption a
+non-event.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. No Side Effect Without Explicit Human Approval (NON-NEGOTIABLE)
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+The app MUST NOT write to GitHub — comment, review, label, or request reviewers — except as
+the direct result of a user action in the UI. AI-generated review content MUST be presented to
+the user for preview and MUST require an explicit confirm action before it is posted to a pull
+request. Automatic background work is limited to reading from GitHub and running local
+analysis; posting is never automatic.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+**Rationale**: The reviews carry the operator's name on a teammate's pull request. Automation
+earns trust by being fast at reading and conservative at writing.
+
+### IV. Event-Driven Core, Pluggable Change Sources
+
+Change detection MUST be isolated behind a source interface that emits normalized "pull
+request changed" events. Polling is the first implementation; a webhook receiver MUST be
+addable as an additional source without modifying the staleness logic, the review pipeline, or
+the UI. Consumers of events MUST be idempotent: the same event delivered twice MUST NOT
+produce two review runs or two posted comments.
+
+**Rationale**: The core user problem is "I only find out when I re-run the prompt." Treating
+updates as events — rather than as a side effect of one polling loop — is what lets delivery
+get faster later without a rewrite.
+
+### V. Incremental Work Only
+
+Any operation whose cost scales with the number of open pull requests MUST avoid redundant
+work. Refresh MUST use conditional requests (ETag / `If-None-Match`) and MUST skip pull
+requests whose head SHA is unchanged. An AI review MUST NOT be re-run for a head SHA that has
+already been reviewed unless the user explicitly forces it. Any skipped work MUST be visible
+to the user as state ("reviewed at abc123"), never silently.
+
+**Rationale**: Re-checking every pull request on every run is the exact inefficiency this
+project exists to eliminate; permitting it anywhere in the implementation reintroduces the
+original problem.
+
+## Technology and Operational Constraints
+
+- **Stack**: TypeScript end to end — Node.js server (HTTP + background workers), React single-
+  page UI, SQLite for local persistence. No additional runtime (no Python, no Docker) MAY be
+  required to run the app.
+- **Startup**: `npm install` followed by a single documented command MUST be sufficient to
+  start the app on a machine that already has Node.js, the `gh` CLI (authenticated), and the
+  `claude` CLI installed. Missing prerequisites MUST produce an actionable error naming the
+  missing tool, never a stack trace.
+- **Configuration**: The set of watched pull requests MUST be expressed as a user-editable
+  GitHub search query, stored in local configuration outside version control. Team- or
+  user-specific values MUST NOT be hardcoded.
+- **Binding**: The server MUST bind to localhost by default. Any change to that default MUST be
+  an explicit, documented opt-in.
+- **Rate limits**: The app MUST surface remaining GitHub API quota and MUST back off rather
+  than fail hard when throttled.
+- **Subprocesses**: Invocation of `claude` MUST be cancellable, MUST have a timeout, and MUST
+  capture stdout, stderr, and exit code for display when a run fails.
+
+## Development Workflow
+
+- Work follows the Spec Kit flow: constitution, then `/speckit-specify`, `/speckit-plan`,
+  `/speckit-tasks`, `/speckit-implement`. Specifications describe behavior and user outcomes;
+  implementation details belong in the plan, not the spec.
+- Every feature branch MUST carry its own spec directory under `specs/`.
+- Tests MUST cover, at minimum: pull request status classification (including the re-review
+  rule), event idempotency, and the "never post without confirmation" boundary. These encode
+  Principles II, III, IV, and V and are the project's regression surface.
+- A change that violates a principle MUST either be redesigned or accompanied by an amendment
+  to this constitution in the same pull request. Silent exceptions are not permitted.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes other conventions in this repository. Amendments MUST be made by
+editing this file in a pull request that states what changed and why, and MUST update the
+version below.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+Versioning uses semantic versioning: MAJOR for removing or redefining a principle in a
+backward-incompatible way, MINOR for adding a principle or materially expanding guidance,
+PATCH for clarifications and wording.
+
+Compliance is verified at review time: the reviewer checks the change against the principles
+above, with particular attention to Principle I (no shared or stored credentials) and
+Principle III (no unapproved writes to GitHub).
+
+**Version**: 1.0.0 | **Ratified**: 2026-10-01 | **Last Amended**: 2026-10-01
