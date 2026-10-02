@@ -1,0 +1,10 @@
+{
+  "refreshIntervalMs": 60000,
+  "maxConcurrentRuns": 3,
+  "runTimeoutMs": 600000,
+  "maxDiffBytes": 400000,
+  "reviewPromptPath": "prompts/review.md",
+  "rereviewPromptPath": "prompts/re-review.md",
+  "port": 4317,
+  "includeDraftsInBulk": false
+}
