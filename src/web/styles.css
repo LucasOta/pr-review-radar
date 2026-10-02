@@ -367,3 +367,36 @@ code {
 .tray-list .link {
   color: var(--accent);
 }
+
+.skeleton {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.skeleton span {
+  display: block;
+  height: 46px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton span {
+    animation: none;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

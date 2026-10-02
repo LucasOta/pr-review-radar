@@ -1,7 +1,8 @@
 import type { JSX } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { DraftDetail } from '@shared/types.js'
 import { ApiError, api } from '../api.js'
+import { useFocusTrap } from '../useFocusTrap.js'
 
 interface Props {
   draftId: string
@@ -21,6 +22,9 @@ export function ReviewPreview({ draftId, onClose, onResolved }: Props): JSX.Elem
   const [error, setError] = useState<string | null>(null)
   const [staleConfirm, setStaleConfirm] = useState<{ current: string } | null>(null)
   const [posted, setPosted] = useState<string | null>(null)
+  const panel = useRef<HTMLDivElement>(null)
+
+  useFocusTrap(panel, onClose)
 
   useEffect(() => {
     let cancelled = false
@@ -89,11 +93,20 @@ export function ReviewPreview({ draftId, onClose, onResolved }: Props): JSX.Elem
   }
 
   return (
-    <div className="overlay" role="dialog" aria-modal="true" aria-label="Review preview">
-      <div className="panel">
+    <div
+      className="overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="preview-title"
+      aria-busy={!draft && !error}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
+      <div className="panel" ref={panel}>
         <header className="panel-head">
           <div>
-            <strong>Review preview</strong>
+            <strong id="preview-title">Review preview</strong>
             {draft && (
               <span className="muted">
                 {' '}
@@ -101,12 +114,20 @@ export function ReviewPreview({ draftId, onClose, onResolved }: Props): JSX.Elem
               </span>
             )}
           </div>
-          <button type="button" className="secondary" onClick={onClose}>
+          <button type="button" className="secondary" onClick={onClose} aria-label="Close preview (Escape)">
             Close
           </button>
         </header>
 
-        {!draft && !error && <p className="muted">Loading…</p>}
+        {!draft && !error && (
+          <p className="muted" role="status">
+            Loading the review…
+          </p>
+        )}
+
+        {draft && draft.body.trim() === '' && (
+          <p className="warn">This run produced an empty review. Re-run it from the board.</p>
+        )}
 
         {draft && !draft.headShaIsCurrent && !posted && (
           <p className="warn">
@@ -135,7 +156,11 @@ export function ReviewPreview({ draftId, onClose, onResolved }: Props): JSX.Elem
 
         {draft && (!editing || posted) && <pre className="draft-body">{draft.body}</pre>}
 
-        {error && <p className="error">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
 
         {staleConfirm && (
           <p className="warn">

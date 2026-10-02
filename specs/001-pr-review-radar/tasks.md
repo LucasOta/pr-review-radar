@@ -61,7 +61,7 @@ Single project at repository root: `src/server/`, `src/web/`, `src/shared/`, `te
 
 **Independent test**: Set a query, open the app, confirm every matching pull request appears in the right group.
 
-- [x] T018 [US1] Write `src/server/github/queries.ts` — GraphQL `search` document returning number, title, author, isDraft, updatedAt, headRefOid, reviews(last:30), recent commits, comments for marker detection, plus `rateLimit`
+- [x] T018 [US1] Write `src/server/github/queries.ts` — GraphQL `search` document returning number, title, author, isDraft, updatedAt, headRefOid, reviews(last:30), recent commits, comments for marker detection (FR-043: review history recoverable after a database wipe), plus `rateLimit`
 - [x] T019 [US1] Implement `src/server/github/fetchBoard.ts` — paginate the search, map nodes to snapshot rows, surface per-repository access failures as `repoErrors` rather than throwing (FR-042)
 - [x] T020 [US1] Implement `src/server/domain/status.ts` — pure classifier with the precedence table from data-model.md (FR-006, FR-007, FR-008)
 - [x] T021 [US1] Implement `src/server/domain/staleness.ts` — count commits dated after the changes-requested review (FR-009)
@@ -87,7 +87,7 @@ browser so a shared repository carries nobody's query (FR-002, FR-002a–c).
 - [x] T030b [US1] Add `src/web/queryStorage.ts` — the only module touching `localStorage`,
       degrading to "no query" when storage is blocked
 - [x] T030c [US1] Hold the active query in `BoardService` memory, dropping the snapshot cache when
-      it changes and refusing to call GitHub for a blank or placeholder query
+      it changes (FR-002b) and refusing to call GitHub for a blank or placeholder query (FR-002c)
 - [x] T030d [US1] Carry the query on `GET /api/board?q=` and `POST /api/refresh`; return
       `409 no_query` when none is usable; expose `hasQuery` on `/api/health`
 - [x] T030e [US1] Restore the query from storage on load, adopt a change made in another tab, and
@@ -108,7 +108,7 @@ browser so a shared repository carries nobody's query (FR-002, FR-002a–c).
 - [x] T032 [P] [US2] Author `prompts/review.md` and `prompts/re-review.md`, and `src/server/review/prompt.ts` to render them with pull request metadata and diff
 - [x] T033 [US2] Implement `src/server/review/runner.ts` — spawn `claude -p ... --output-format json`, stream stdin, enforce `runTimeoutMs`, support cancel via AbortSignal, capture exit code and stderr tail (FR-014, FR-016, FR-017, FR-018)
 - [x] T034 [US2] Implement `src/server/review/queue.ts` — bounded concurrency, per-pull-request single-flight, already-reviewed-SHA skip with `force` override, run state transitions persisted (FR-019, FR-020, FR-021, FR-022, FR-023)
-- [x] T035 [US2] Implement `POST /api/pulls/:owner/:name/:number/review`, `POST /api/runs/:runId/cancel`, `GET /api/runs/:runId` per contracts/http-api.md, including the 409 bodies
+- [x] T035 [US2] Implement `POST /api/pulls/:owner/:name/:number/review` (FR-012, FR-013), `POST /api/runs/:runId/cancel`, `GET /api/runs/:runId` per contracts/http-api.md, including the 409 bodies
 - [x] T036 [US2] Create a `ReviewDraft` on run success and expose `GET /api/drafts/:id` with `headShaIsCurrent`
 - [x] T037 [US2] Implement `PATCH /api/drafts/:id` (body edit, `ready` only) and `POST /api/drafts/:id/discard` (FR-025, FR-026)
 - [x] T038 [US2] Implement `src/server/github/post.ts` — the **only** module importing a mutating Octokit method; appends the `<!-- pr-review-radar:draft:<id>:sha:<sha> -->` marker, inserts `posted_reviews`, returns comment id and URL (FR-027, FR-029, FR-031)
@@ -129,11 +129,11 @@ browser so a shared repository carries nobody's query (FR-002, FR-002a–c).
 
 **Independent test**: Push a commit to a watched pull request from elsewhere; the row moves within one interval.
 
-- [x] T045 [US3] Implement `src/server/events/ChangeSource.ts` — interface plus the `ChangeEvent` union (changed + removed) as in contracts/change-source.md
+- [x] T045 [US3] Implement `src/server/events/ChangeSource.ts` — interface plus the `ChangeEvent` union (changed + removed) as in contracts/change-source.md, the seam that makes webhook delivery additive (FR-039)
 - [x] T046 [US3] Implement `src/server/events/bus.ts` — dedupe on `(repo, number, headSha, updatedAt)`, fan-out, consumer error isolation (FR-036)
 - [x] T047 [US3] Implement `src/server/events/PollingSource.ts` — interval cycle, snapshot diffing, emit only on changed `updatedAt`/`headSha`, emit removals for disappeared pull requests, `refreshNow()`, `status()` with lastSuccessAt/lastError (FR-032, FR-033, FR-041)
 - [x] T048 [US3] Implement `src/server/http/sse.ts` — `GET /api/events` with `pr.updated`, `pr.removed`, `run.updated`, `draft.ready`, `draft.resolved`, `refresh.completed`, `error`, plus a 15s heartbeat
-- [x] T049 [US3] Emit run and draft lifecycle events from the queue and draft services into the SSE hub
+- [x] T049 [US3] Emit run and draft lifecycle events from the queue and draft services into the SSE hub, so the board shows live run state (FR-015)
 - [x] T050 [US3] Implement `POST /api/refresh` delegating to `refreshNow()` (FR-037) — landed early because US1 needs a way to populate the cache; US3 repoints it at `PollingSource.refreshNow()`
 - [x] T051 [US3] Build `src/web/useEventStream.ts` — subscribe, apply updates in place, resynchronize via `GET /api/board` on reconnect (FR-035)
 - [x] T052 [P] [US3] Wire staleness and last-refresh display plus a manual Refresh button into `StatusBar.tsx` (FR-038)
@@ -174,13 +174,29 @@ browser so a shared repository carries nobody's query (FR-002, FR-002a–c).
 
 ## Phase 8: Polish
 
-- [ ] T065 [P] Keyboard navigation and focus management on the board and preview
-- [ ] T066 [P] Loading, empty, and error states for every group and the preview pane
-- [ ] T067 [P] Structured server logging with run ids, with the token redacted everywhere
-- [ ] T068 [P] Performance pass: 50 pull requests render without jank; one polling cycle issues one GraphQL request
-- [ ] T069 Run `/speckit-analyze` and resolve any spec/plan/tasks drift before merge
+- [x] T065 [P] Keyboard navigation and focus management on the board and preview
+- [x] T066 [P] Loading, empty, and error states for every group and the preview pane
+- [x] T067 [P] Structured server logging with run ids, with the token redacted everywhere
+- [x] T068 [P] Performance pass: 50 pull requests render without jank; one polling cycle issues one GraphQL request
+- [x] T069 Run `/speckit-analyze` and resolve any spec/plan/tasks drift before merge — found plan-tree drift (8 files), 7 requirements with no task reference, no success-criteria mapping, and a constitution rule contradicted by the branch-per-story workflow; all four fixed
 
 ---
+
+## Success criteria verification
+
+Where each measurable outcome from spec.md is actually checked.
+
+| Criterion | Verified by |
+|---|---|
+| SC-001 board readable in under 15s with no typing | Manual: board loads grouped from cache on open |
+| SC-002 a changed PR visible within one minute | `refreshIntervalMs` default 60000; `tests/integration/polling.test.ts` emits on a moved head |
+| SC-003 a quiet cycle does no review work | `tests/integration/polling.test.ts` (no events), `tests/integration/performance.test.ts` (one request, no rewrites) |
+| SC-004 ten PRs in under five actions before preview | One group action enqueues the whole group: `tests/integration/bulk.test.ts` |
+| SC-005 zero unconfirmed posts | `tests/integration/posting-guard.test.ts`, including the static write-surface scan |
+| SC-006 clone to posted review in ten minutes | Verified by a clean clone: install, build, start, doctor, suite green |
+| SC-007 50 PRs without exhausting quota | `tests/integration/performance.test.ts` — one GraphQL request per page per cycle |
+| SC-008 correct board after deleting local storage | Comment markers restore coverage: `tests/unit/status.test.ts`, `tests/integration/board.test.ts` |
+| SC-009 the manual summary prompt is retired | Operator judgement once US3 is in daily use |
 
 ## Dependencies
 

@@ -97,6 +97,8 @@ src/
 │   ├── index.ts              # Entry: preflight, wire, listen on 127.0.0.1
 │   ├── doctor.ts             # `npm run doctor` environment report
 │   ├── paths.ts              # Root/config/data path resolution (src and dist)
+│   ├── ids.ts                # Time-ordered run/draft/post identifiers
+│   ├── log.ts                # Credential redaction for every log line
 │   ├── board/
 │   │   └── service.ts        # Cache refresh + board composition (US3 wraps this)
 │   ├── config/
@@ -120,7 +122,9 @@ src/
 │   ├── review/
 │   │   ├── queue.ts          # Bounded concurrency, per-PR single-flight
 │   │   ├── runner.ts         # Spawn claude -p, timeout, cancel, capture
-│   │   └── prompt.ts         # Default review/re-review prompt templates
+│   │   ├── prompt.ts         # Default review/re-review prompt templates
+│   │   ├── drafts.ts         # Read, edit, discard — no GitHub write client
+│   │   └── bulk.ts           # Sweep one status group into the queue
 │   ├── store/
 │   │   ├── db.ts             # node:sqlite open + migrations
 │   │   ├── schema.sql        # Tables
@@ -133,13 +137,17 @@ src/
     ├── main.tsx
     ├── App.tsx               # Board shell, status groups
     ├── queryStorage.ts       # localStorage ownership of the search query
+    ├── board.ts              # Pure in-place row updates for streamed events
+    ├── useFocusTrap.ts       # Dialog focus containment, Escape, focus restore
     ├── api.ts                # Typed fetch wrappers (carry the query)
     ├── useEventStream.ts     # SSE subscription -> in-place updates
     └── components/
-        ├── StatusGroup.tsx
+        ├── StatusGroup.tsx   # Group header, count, group review action
         ├── PullRequestRow.tsx
         ├── ReviewPreview.tsx # Edit + Post + Discard
-        └── StatusBar.tsx     # Operator identity, rate limit, last refresh
+        ├── DraftTray.tsx     # Reviews awaiting a decision
+        ├── QueryEditor.tsx   # Save / clear the browser's query
+        └── StatusBar.tsx     # Operator identity, rate limit, last refresh, live state
 
 tests/
 ├── unit/                     # status, staleness, dedupe, prompt rendering

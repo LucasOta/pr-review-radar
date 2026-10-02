@@ -45,11 +45,21 @@ export function StatusGroup({ status, pullRequests, onChanged, onPreview }: Prop
         {STATUS_LABELS[status]}
         <span className="count">{pullRequests.length}</span>
         {bulkable && (
-          <button type="button" className="group-action" onClick={() => void reviewAll()} disabled={busy}>
+          <button
+            type="button"
+            className="group-action"
+            onClick={() => void reviewAll()}
+            disabled={busy}
+            aria-label={`${label} ${pullRequests.length} pull request(s) in ${STATUS_LABELS[status]}`}
+          >
             {busy ? 'Queueing…' : `${label} (${pullRequests.length})`}
           </button>
         )}
-        {note && <span className="group-note muted">{note}</span>}
+        {note && (
+          <span className="group-note muted" role="status">
+            {note}
+          </span>
+        )}
       </h2>
       <ul className="rows">
         {pullRequests.map((pullRequest) => (
