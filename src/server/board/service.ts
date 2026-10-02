@@ -134,6 +134,7 @@ export class BoardService {
 
     return {
       operator: await this.clients.identity(),
+      queue: { active: 0, queued: 0 },
       query: this.activeQuery,
       lastRefreshAt,
       stale: this.isStale(lastRefreshAt, config.refreshIntervalMs),

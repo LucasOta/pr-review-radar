@@ -10,6 +10,7 @@ import { StatusBar } from './components/StatusBar.js'
 import { StatusGroup } from './components/StatusGroup.js'
 import { QueryEditor } from './components/QueryEditor.js'
 import { ReviewPreview } from './components/ReviewPreview.js'
+import { DraftTray } from './components/DraftTray.js'
 
 export function App(): JSX.Element {
   const store = useMemo(() => createQueryStore(), [])
@@ -20,6 +21,7 @@ export function App(): JSX.Element {
   const [editingQuery, setEditingQuery] = useState(() => !isUsableQuery(store.read()))
   const [previewDraftId, setPreviewDraftId] = useState<string | null>(null)
   const [streamLive, setStreamLive] = useState(false)
+  const [draftRevision, setDraftRevision] = useState(0)
   const queryRef = useRef(query)
   queryRef.current = query
 
@@ -57,7 +59,11 @@ export function App(): JSX.Element {
       setBoard((current) =>
         current ? { ...current, lastRefreshAt: at, stale: false, rateLimit } : current,
       ),
-    'draft.resolved': () => void load(),
+    'draft.ready': () => setDraftRevision((value) => value + 1),
+    'draft.resolved': () => {
+      setDraftRevision((value) => value + 1)
+      void load()
+    },
   })
 
   // Another tab changed the query: adopt it rather than fighting over the board.
@@ -148,6 +154,8 @@ export function App(): JSX.Element {
         />
       )}
 
+      <DraftTray revision={draftRevision} onPreview={setPreviewDraftId} />
+
       {board.repoErrors.length > 0 && (
         <section className="banner banner-warn">
           <strong>Some repositories could not be read.</strong>
@@ -195,7 +203,10 @@ export function App(): JSX.Element {
         <ReviewPreview
           draftId={previewDraftId}
           onClose={() => setPreviewDraftId(null)}
-          onResolved={() => void load()}
+          onResolved={() => {
+            setDraftRevision((value) => value + 1)
+            void load()
+          }}
         />
       )}
     </main>

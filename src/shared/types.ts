@@ -122,8 +122,15 @@ export interface OperatorIdentity {
   avatarUrl: string | null
 }
 
+export interface QueueDepth {
+  active: number
+  queued: number
+}
+
 export interface BoardResponse {
   operator: OperatorIdentity
+  /** How much review work is in flight, so the board can show progress during a sweep. */
+  queue: QueueDepth
   /** The query the board was built from. Null until the browser supplies one. */
   query: string | null
   lastRefreshAt: string | null
@@ -147,6 +154,9 @@ export interface OperatorConfig {
   port: number
   includeDraftsInBulk: boolean
 }
+
+/** Status groups a bulk "review everything here" action can target. */
+export const BULK_GROUPS: PullRequestStatus[] = ['needs_review', 'awaiting_rereview', 'error']
 
 /** Shown as placeholder text in the query editor; never used as a real query. */
 export const QUERY_EXAMPLE = 'org:YOUR_ORG is:pr is:open label:YOUR_LABEL'
