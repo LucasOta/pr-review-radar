@@ -36,7 +36,8 @@ local server with each request. Nothing writes it to disk, so your query is your
 code is shared. Clearing your browser data clears the query; the app asks for it again.
 
 Server-side settings (refresh interval, concurrency, timeouts, port) live in `config/config.json`.
-That file and `data/` are gitignored. Nothing you configure is committable.
+Start from the committed `config/config.example.json`; see `config/README.md` for what each key
+does. That file and `data/` are gitignored. Nothing you configure is committable.
 
 ## The loop
 

@@ -164,11 +164,11 @@ browser so a shared repository carries nobody's query (FR-002, FR-002a–c).
 
 **Independent test**: Fresh clone on a second machine with a different GitHub account completes the loop touching no committed file.
 
-- [ ] T060 [US5] Write `README.md` — what it does, prerequisites, clone/install/run, the review loop, troubleshooting, derived from quickstart.md
-- [ ] T061 [P] [US5] Ship `config/config.example.json` for server-side settings and document the query example (placeholder org and label) shown in the UI (FR-001, FR-002)
-- [ ] T062 [P] [US5] Make every preflight failure message name the missing tool and its install command (FR-044)
-- [ ] T063 [P] [US5] Add `npm run doctor` — report Node version, `gh` login, `claude` version, config path, database path, and current rate limit
-- [ ] T064 [US5] Verify on a clean clone that no credential or personal configuration is ever staged; add `tests/integration/no-secrets.test.ts` asserting the config loader writes only outside the repository's tracked paths and that no file on disk ever contains the search query
+- [x] T060 [US5] Write `README.md` — what it does, prerequisites, clone/install/run, the review loop, troubleshooting, derived from quickstart.md
+- [x] T061 [P] [US5] Ship `config/config.example.json` for server-side settings and document the query example (placeholder org and label) shown in the UI (FR-001, FR-002)
+- [x] T062 [P] [US5] Make every preflight failure message name the missing tool and its install command (FR-044)
+- [x] T063 [P] [US5] Add `npm run doctor` — report Node version, `gh` login, `claude` version, config/database/bundle/prompt paths, port, concurrency, and current rate limit, naming anything missing
+- [x] T064 [US5] Verify on a clean clone that no credential or personal configuration is ever staged; add `tests/integration/no-secrets.test.ts` asserting the config loader writes only outside the repository's tracked paths and that no file on disk ever contains the search query
 
 ---
 
