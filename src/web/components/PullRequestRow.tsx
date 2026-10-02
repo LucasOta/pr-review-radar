@@ -59,16 +59,31 @@ export function PullRequestRow({ pullRequest, onChanged, onPreview }: Props): JS
           )}
         <span className="row-actions">
           {pullRequest.pendingDraftId && (
-            <button type="button" onClick={() => onPreview(pullRequest.pendingDraftId as string)}>
+            <button
+              type="button"
+              onClick={() => onPreview(pullRequest.pendingDraftId as string)}
+              aria-label={`Preview the review for ${pullRequest.repo}#${pullRequest.number}`}
+            >
               Preview review
             </button>
           )}
           {pullRequest.status === 'running' ? (
-            <button type="button" className="secondary" onClick={() => void cancel()} disabled={busy}>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => void cancel()}
+              disabled={busy}
+              aria-label={`Cancel the running review for ${pullRequest.repo}#${pullRequest.number}`}
+            >
               Cancel
             </button>
           ) : pullRequest.status === 'awaiting_rereview' ? (
-            <button type="button" onClick={() => void request('rereview')} disabled={busy}>
+            <button
+              type="button"
+              onClick={() => void request('rereview')}
+              disabled={busy}
+              aria-label={`Request a re-review of ${pullRequest.repo}#${pullRequest.number}`}
+            >
               {busy ? 'Starting…' : 'Request re-review'}
             </button>
           ) : pullRequest.status === 'ready_for_human' ? (
@@ -77,11 +92,17 @@ export function PullRequestRow({ pullRequest, onChanged, onPreview }: Props): JS
               className="secondary"
               onClick={() => void request('review', true)}
               disabled={busy}
+              aria-label={`Re-run the review of ${pullRequest.repo}#${pullRequest.number} at its current commit`}
             >
               Re-run
             </button>
           ) : (
-            <button type="button" onClick={() => void request('review')} disabled={busy}>
+            <button
+              type="button"
+              onClick={() => void request('review')}
+              disabled={busy}
+              aria-label={`Request an AI review of ${pullRequest.repo}#${pullRequest.number}`}
+            >
               {busy ? 'Starting…' : 'Request AI review'}
             </button>
           )}
@@ -106,7 +127,11 @@ export function PullRequestRow({ pullRequest, onChanged, onPreview }: Props): JS
         {pullRequest.lastRun?.status === 'failed' && (
           <span className="error">last run failed: {pullRequest.lastRun.error ?? 'unknown'}</span>
         )}
-        {error && <span className="error">{error}</span>}
+        {error && (
+          <span className="error" role="alert">
+            {error}
+          </span>
+        )}
       </div>
     </li>
   )

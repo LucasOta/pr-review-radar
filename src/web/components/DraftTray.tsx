@@ -34,14 +34,19 @@ export function DraftTray({ revision, onPreview }: Props): JSX.Element | null {
   if (drafts.length === 0) return null
 
   return (
-    <section className="banner tray">
+    <section className="banner tray" aria-label="Reviews awaiting a decision">
       <strong>
         {drafts.length} review{drafts.length === 1 ? '' : 's'} waiting for you
       </strong>
       <ul className="tray-list">
         {drafts.map((draft) => (
           <li key={draft.id}>
-            <button type="button" className="link" onClick={() => onPreview(draft.id)}>
+            <button
+              type="button"
+              className="link"
+              onClick={() => onPreview(draft.id)}
+              aria-label={`Preview the review for ${draft.repo}#${draft.number}`}
+            >
               {draft.repo}#{draft.number}
             </button>
             <code>{draft.headSha.slice(0, 7)}</code>

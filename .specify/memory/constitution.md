@@ -90,7 +90,10 @@ original problem.
 - Work follows the Spec Kit flow: constitution, then `/speckit-specify`, `/speckit-plan`,
   `/speckit-tasks`, `/speckit-implement`. Specifications describe behavior and user outcomes;
   implementation details belong in the plan, not the spec.
-- Every feature branch MUST carry its own spec directory under `specs/`.
+- Every feature MUST carry its own spec directory under `specs/`. A feature may be delivered
+  across several branches — one per user story is the normal shape — and those branches share
+  the feature's spec directory rather than each creating a new one. A branch that introduces a
+  behavior the spec does not describe MUST update the spec in the same pull request.
 - Tests MUST cover, at minimum: pull request status classification (including the re-review
   rule), event idempotency, and the "never post without confirmation" boundary. These encode
   Principles II, III, IV, and V and are the project's regression surface.
@@ -111,4 +114,4 @@ Compliance is verified at review time: the reviewer checks the change against th
 above, with particular attention to Principle I (no shared or stored credentials) and
 Principle III (no unapproved writes to GitHub).
 
-**Version**: 1.0.1 | **Ratified**: 2026-10-01 | **Last Amended**: 2026-10-01
+**Version**: 1.0.2 | **Ratified**: 2026-10-01 | **Last Amended**: 2026-10-02

@@ -103,8 +103,16 @@ export function App(): JSX.Element {
 
   if (loading && !board) {
     return (
-      <main className="shell">
-        <p className="muted">Loading board…</p>
+      <main className="shell" aria-busy="true">
+        <h1>PR Review Radar</h1>
+        <p className="muted" role="status">
+          Loading the board…
+        </p>
+        <div className="skeleton" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
       </main>
     )
   }
@@ -113,7 +121,12 @@ export function App(): JSX.Element {
     return (
       <main className="shell">
         <h1>PR Review Radar</h1>
-        <p className="error">Could not reach the local server: {error}</p>
+        <p className="error" role="alert">
+          Could not reach the local server: {error}
+        </p>
+        <p className="muted">
+          Is it still running? Start it with <code>npm start</code>, then reload.
+        </p>
       </main>
     )
   }
@@ -152,6 +165,13 @@ export function App(): JSX.Element {
           }
           onCancel={hasQuery ? () => setEditingQuery(false) : undefined}
         />
+      )}
+
+      {/* The board is still the last good one; say so instead of silently showing stale rows. */}
+      {error && (
+        <section className="banner banner-warn" role="alert">
+          <strong>Showing the last known board.</strong> {error}
+        </section>
       )}
 
       <DraftTray revision={draftRevision} onPreview={setPreviewDraftId} />

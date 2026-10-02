@@ -12,6 +12,7 @@ import { registerStatic } from './http/static.js'
 import { formatPreflightError, preflight, PreflightError } from './preflight.js'
 import { DraftService } from './review/drafts.js'
 import { ReviewQueue } from './review/queue.js'
+import { REDACT_PATHS, redactSecrets } from './log.js'
 import { openDatabase } from './store/db.js'
 import { Repositories } from './store/repos.js'
 
@@ -30,13 +31,39 @@ async function main(): Promise<void> {
   const poster = new ReviewPoster(clients.rest, repos, () => clients.identity())
 
   const app = Fastify({
-    logger: { level: process.env.LOG_LEVEL ?? 'info', transport: undefined },
+    logger: {
+      level: process.env.LOG_LEVEL ?? 'info',
+      transport: undefined,
+      // Belt and braces: redact by key, and scrub any credential-shaped string that slips
+      // through in a message (Constitution I).
+      redact: { paths: REDACT_PATHS, censor: '[redacted]' },
+      hooks: {
+        logMethod(args, method) {
+          const scrubbed = args.map((arg) =>
+            typeof arg === 'string' ? redactSecrets(arg, checks.token) : arg,
+          )
+          method.apply(this, scrubbed as typeof args)
+        },
+      },
+    },
   })
 
   const hub = new EventHub()
 
   const queue = new ReviewQueue(repos, diffs, () => config.get(), {
     onRunUpdated: (run) => {
+      app.log.info(
+        {
+          runId: run.id,
+          repo: run.repo,
+          number: run.number,
+          headSha: run.headSha.slice(0, 7),
+          kind: run.kind,
+          status: run.status,
+          ...(run.error ? { error: run.error } : {}),
+        },
+        'review run',
+      )
       hub.broadcast('run.updated', {
         runId: run.id,
         repo: run.repo,
@@ -48,6 +75,10 @@ async function main(): Promise<void> {
       if (view) hub.broadcast('pr.updated', { pullRequest: view })
     },
     onDraftReady: (draft) => {
+      app.log.info(
+        { runId: draft.runId, draftId: draft.id, repo: draft.repo, number: draft.number },
+        'review ready to preview',
+      )
       hub.broadcast('draft.ready', {
         draftId: draft.id,
         runId: draft.runId,
