@@ -46,6 +46,12 @@ export const api = {
       body: JSON.stringify(query === null ? {} : { query }),
     }),
 
+  bulkReview: (group: string, includeDrafts = false) =>
+    request<{
+      enqueued: Array<{ runId: string; repo: string; number: number }>
+      skipped: Array<{ repo: string; number: number; reason: string }>
+    }>('/api/bulk/review', { method: 'POST', body: JSON.stringify({ group, includeDrafts }) }),
+
   requestReview: (repo: string, number: number, kind: ReviewKind, force = false) =>
     request<{ runId: string; status: string }>(`/api/pulls/${repo}/${number}/review`, {
       method: 'POST',

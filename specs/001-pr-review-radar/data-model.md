@@ -128,7 +128,7 @@ carrying the example's placeholders, is never sent to GitHub (FR-002c).
 | `reviewPromptPath` | `prompts/review.md` | FR default prompt, overridable |
 | `rereviewPromptPath` | `prompts/re-review.md` | |
 | `port` | `4317` | bound to `127.0.0.1` (FR-045) |
-| `includeDraftsInBulk` | `false` | spec assumption |
+| `includeDraftsInBulk` | `false` | spec assumption; a bulk request may override it per call |
 
 ## Derived status
 

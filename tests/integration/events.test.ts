@@ -36,6 +36,7 @@ function view(over: Partial<PullRequestView> = {}): PullRequestView {
 function board(rows: PullRequestView[]): BoardResponse {
   const response: BoardResponse = {
     operator: { login: 'operator', avatarUrl: null },
+    queue: { active: 0, queued: 0 },
     query: 'org:acme is:pr is:open',
     lastRefreshAt: '2026-09-02T10:00:00Z',
     stale: false,

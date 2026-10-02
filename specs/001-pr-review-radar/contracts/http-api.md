@@ -20,6 +20,7 @@ scheduled, so this first response may legitimately be empty while the new query 
 ```jsonc
 {
   "operator": { "login": "octocat", "avatarUrl": "..." },
+  "queue": { "active": 1, "queued": 2 },
   "query": "org:IntusCare is:pr is:open label:squad-x",  // null until a browser supplies one
   "lastRefreshAt": "2026-10-01T18:04:12Z",
   "stale": false,
@@ -127,11 +128,18 @@ draft exists.
 ### `POST /api/bulk/review`
 
 ```jsonc
-{ "group": "needs_review" | "awaiting_rereview", "includeDrafts": false }
+{ "group": "needs_review" | "awaiting_rereview" | "error", "includeDrafts": false }
 ```
 
-`202 { "enqueued": ["run_...", "run_..."], "skipped": [{ "repo": "...", "number": 1, "reason": "already_reviewed" }] }`.
-Respects `maxConcurrentRuns`; skips are reported, never silent (FR-020, Principle V).
+`202 { "enqueued": [{ "runId": "run_...", "repo": "...", "number": 1 }], "skipped": [{ "repo": "...", "number": 2, "reason": "draft_pull_request" }] }`.
+
+`awaiting_rereview` enqueues re-reviews; the other groups enqueue reviews. Respects
+`maxConcurrentRuns`; skip reasons are `draft_pull_request`, `review_awaiting_decision`, or a queue
+error code — reported, never silent (FR-020, Principle V). An unknown group returns
+`400 invalid_group`.
+
+A pull request with a run in flight has already moved to the `running` group, so a repeated sweep
+finds nothing rather than double-queueing.
 
 ## Drafts
 

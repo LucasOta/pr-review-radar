@@ -151,10 +151,10 @@ browser so a shared repository carries nobody's query (FR-002, FR-002a–c).
 
 **Independent test**: Trigger the group action with several pull requests needing review; each yields its own preview and nothing posts automatically.
 
-- [ ] T056 [US4] Implement `POST /api/bulk/review` — enqueue a group, honor `includeDraftsInBulk`, return `enqueued` and `skipped` with reasons (FR-020, no silent caps)
-- [ ] T057 [P] [US4] Add group-level action buttons and a queue progress indicator to `StatusGroup.tsx`
-- [ ] T058 [P] [US4] Build a drafts tray listing every pending preview so bulk results are reachable one by one
-- [ ] T059 [P] [US4] Write `tests/integration/bulk.test.ts` — concurrency respected, one failure does not stop the rest, zero drafts auto-posted, skips reported
+- [x] T056 [US4] Implement `POST /api/bulk/review` in `src/server/review/bulk.ts` — enqueue a group, honor `includeDraftsInBulk`, return `enqueued` and `skipped` with reasons (FR-020, no silent caps)
+- [x] T057 [P] [US4] Add group-level action buttons and a queue progress indicator to `StatusGroup.tsx`
+- [x] T058 [P] [US4] Build a drafts tray listing every pending preview so bulk results are reachable one by one
+- [x] T059 [P] [US4] Write `tests/integration/bulk.test.ts` — concurrency respected, one failure does not stop the rest, zero drafts auto-posted, skips reported
 
 ---
 

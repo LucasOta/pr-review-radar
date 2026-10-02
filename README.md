@@ -54,6 +54,9 @@ reads your token from `GITHUB_TOKEN` or `gh auth token` and keeps it in memory o
 - **Leave the board open and it keeps itself current.** It polls on its own, re-evaluates only the
   PRs that actually changed, and pushes rows to the browser over an event stream — no prompt to
   re-run, no page reload. A quiet cycle costs one GraphQL query and nothing else.
+- **Review a whole group in one click.** "Review all" / "Re-review all" queues every PR in that
+  group, bounded by your concurrency limit, and reports what it skipped and why. Results land in a
+  tray — each still needs its own preview and confirmation.
 - Failures degrade instead of blanking: a failed refresh keeps the last board, marks it stale, and
   retries. The status bar shows live/offline, API quota, and last successful refresh.
 - Status computed from GitHub facts on every read, so it cannot drift.
@@ -62,8 +65,8 @@ reads your token from `GITHUB_TOKEN` or `gh auth token` and keeps it in memory o
 
 ### Not yet
 
-Bulk "review everything in this group" actions and the team-packaging polish — see
-[tasks.md](specs/001-pr-review-radar/tasks.md) phases 6 onward. Webhook delivery is designed for
+Team-packaging polish (`npm run doctor` extras, config example, accessibility pass) — see
+[tasks.md](specs/001-pr-review-radar/tasks.md) phases 7 onward. Webhook delivery is designed for
 ([ChangeSource](specs/001-pr-review-radar/contracts/change-source.md)) but not built: adding it is
 a new file implementing the same interface, not a refactor.
 

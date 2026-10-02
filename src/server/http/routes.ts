@@ -6,6 +6,7 @@ import type { ConfigStore } from '../config/store.js'
 import type { ReviewQueue } from '../review/queue.js'
 import { QueueError } from '../review/queue.js'
 import type { DraftService } from '../review/drafts.js'
+import { isBulkGroup, runBulkReview } from '../review/bulk.js'
 import { DraftError } from '../review/drafts.js'
 import type { ReviewPoster } from '../github/post.js'
 import { PostError } from '../github/post.js'
@@ -67,7 +68,8 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
         void deps.refreshNow().catch(() => undefined)
       }
     }
-    return deps.board.board()
+    const board = await deps.board.board()
+    return { ...board, queue: { active: deps.queue.activeCount, queued: deps.queue.queuedCount } }
   })
 
   app.post<{ Body?: { query?: string } }>('/api/refresh', async (request, reply) => {
@@ -131,6 +133,29 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
     const draft = deps.repos.listPendingDrafts().find((candidate) => candidate.runId === run.id)
     return { ...run, draftId: draft?.id ?? null }
   })
+
+  app.post<{ Body?: { group?: string; includeDrafts?: boolean } }>(
+    '/api/bulk/review',
+    async (request, reply) => {
+      const group = request.body?.group
+      if (!isBulkGroup(group)) {
+        return reply.code(400).send({
+          error: 'invalid_group',
+          message: 'group must be needs_review, awaiting_rereview, or error.',
+        })
+      }
+
+      const result = await runBulkReview(
+        { group, ...(request.body?.includeDrafts !== undefined ? { includeDrafts: request.body.includeDrafts } : {}) },
+        { board: deps.board, queue: deps.queue, config: () => deps.config.get() },
+      )
+      // Skips are reported, never silent (Constitution V).
+      if (result.skipped.length > 0) {
+        request.log.info({ skipped: result.skipped }, 'bulk review skipped pull requests')
+      }
+      return reply.code(202).send(result)
+    },
+  )
 
   app.get('/api/runs', async () => ({
     active: deps.queue.activeCount,
