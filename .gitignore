@@ -9,5 +9,7 @@ data/
 *.sqlite
 *.sqlite-journal
 *.db
-config/
+config/*
+!config/config.example.json
+!config/README.md
 dist/

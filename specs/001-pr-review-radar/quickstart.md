@@ -28,7 +28,7 @@ On first run the app asks for a search query. Type one in the UI — the same sy
 search:
 
 ```
-org:IntusCare is:pr is:open label:squad-x
+org:YOUR_ORG is:pr is:open label:YOUR_LABEL
 ```
 
 It is stored in **your browser**, under `localStorage["pr-review-radar:query"]`, and sent to the

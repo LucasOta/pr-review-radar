@@ -21,7 +21,7 @@ scheduled, so this first response may legitimately be empty while the new query 
 {
   "operator": { "login": "octocat", "avatarUrl": "..." },
   "queue": { "active": 1, "queued": 2 },
-  "query": "org:IntusCare is:pr is:open label:squad-x",  // null until a browser supplies one
+  "query": "org:YOUR_ORG is:pr is:open label:YOUR_LABEL",  // null until a browser supplies one
   "lastRefreshAt": "2026-10-01T18:04:12Z",
   "stale": false,
   "rateLimit": { "remaining": 4821, "resetAt": "2026-10-01T19:00:00Z" },
